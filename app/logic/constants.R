@@ -4,7 +4,8 @@ box::use(
 )
 
 wearalyze_theme <- bs_theme(
-  version = 5,
+  #version = 5,
+  bootswatch = "morph",
   base_font = font_google("Ubuntu"),
   heading_font = font_google("Ubuntu"),
   code_font = font_google("Fira Code")

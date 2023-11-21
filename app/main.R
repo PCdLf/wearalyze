@@ -7,7 +7,8 @@ box::use(
 )
 
 box::use(
-  app/logic/constants
+  app/logic/constants,
+  app/view/components/dataUpload
 )
 
 #' @export
@@ -28,28 +29,119 @@ ui <- function(id) {
     id = ns("navbar_id"),
     title = "Wearalyze",
     theme = constants$wearalyze_theme,
-    nav_panel("E4",
-              icon = icon("heart-circle-bolt"),
-              card(
-                p("placeholder")
-              )
-    ),
-    nav_panel("Embrace Plus",
-              icon = icon("heart-pulse"),
-              layout_columns(
-                card(
-                  p("placeholder")
-                ),
+    nav_menu(
+      title = "E4",
+      icon = icon("heart-circle-bolt"),
+      nav_panel("Data",
+                icon = icon("file-upload"),
+                dataUpload$ui("data")
+      ),
+      nav_panel("Calendar",
+                icon = icon("calendar-alt"),
                 card(
                   p("placeholder")
                 )
-              )
+                
+      ),
+      nav_panel("Visualization",
+                icon = icon("chart-bar"),
+                card(
+                  p("placeholder")
+                )
+                
+      ),
+      nav_panel("Analysis",
+                icon = icon("chart-line"),
+                card(
+                  p("placeholder")
+                )
+                
+      ),
+      nav_panel("Batch analysis",
+                icon = icon("list-ol"),
+                card(
+                  p("placeholder")
+                )
+                
+      )
     ),
-    nav_panel("Nowatch",
-              icon = icon("clock"),
-              card(
-                p("placeholder")
-              )
+    nav_menu(
+      title = "Embrace Plus",
+      icon = icon("heart-pulse"),
+      nav_panel("Data",
+                icon = icon("file-upload"),
+                card(
+                  p("placeholder")
+                )
+                
+      ),
+      nav_panel("Calendar",
+                icon = icon("calendar-alt"),
+                card(
+                  p("placeholder")
+                )
+                
+      ),
+      nav_panel("Visualization",
+                icon = icon("chart-bar"),
+                card(
+                  p("placeholder")
+                )
+                
+      ),
+      nav_panel("Analysis",
+                icon = icon("chart-line"),
+                card(
+                  p("placeholder")
+                )
+                
+      ),
+      nav_panel("Batch analysis",
+                icon = icon("list-ol"),
+                card(
+                  p("placeholder")
+                )
+                
+      )
+    ),
+    nav_menu(
+      title = "Nowatch",
+      icon = icon("clock"),
+      nav_panel("Data",
+                icon = icon("file-upload"),
+                card(
+                  p("placeholder")
+                )
+                
+      ),
+      nav_panel("Calendar",
+                icon = icon("calendar-alt"),
+                card(
+                  p("placeholder")
+                )
+                
+      ),
+      nav_panel("Visualization",
+                icon = icon("chart-bar"),
+                card(
+                  p("placeholder")
+                )
+                
+      ),
+      nav_panel("Analysis",
+                icon = icon("chart-line"),
+                card(
+                  p("placeholder")
+                )
+                
+      ),
+      nav_panel("Batch analysis",
+                icon = icon("list-ol"),
+                card(
+                  p("placeholder")
+                )
+                
+      )
     )
   )
 }
@@ -60,6 +152,6 @@ server <- function(id) {
     
     # reactive values
     r <- reactiveValues(placeholder = NULL)
-
+    
   })
 }
