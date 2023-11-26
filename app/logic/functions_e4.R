@@ -3,7 +3,8 @@ box::use(
   dplyr[filter],
   dygraphs[dygraph, dyHighlight, dyOptions, dyUnzoom, dyLimit, 
            dyAxis, dyEvent, dyRangeSelector, dyShading],
-  wearables[as_timeseries]
+  wearables[as_timeseries],
+  zoo[index]
 )
 
 box::use(
@@ -49,12 +50,12 @@ e4_timeseries_plot <- function(data,
     begin_time <- min(index(ts)) - 30*60
     
     out <- dygraph(ts, main = main_title, group = "plot2", 
-                   ylab = ylab_title, height = 150, width = 900) %>%   
-      dyHighlight(highlightCircleSize = 5) %>%
+                   ylab = ylab_title, height = 150, width = 900) |>   
+      dyHighlight(highlightCircleSize = 5) |>
       dyOptions(drawPoints = FALSE, 
                 drawXAxis = draw_x_axis,
                 connectSeparatedPoints = TRUE,
-                colors = color) %>%
+                colors = color) |>
       dyUnzoom()
     # dyAxis(name = "x", valueRange = c(begin_time, NULL))
     
@@ -68,13 +69,13 @@ e4_timeseries_plot <- function(data,
         label <- NULL
       }
       
-      out <- out %>%
+      out <- out |>
         dyLimit(y_line_val, label, strokePattern = "dashed", color = color)
       
     }
     
     if(!is.null(yaxis_range)){
-      out <- out %>%
+      out <- out |>
         dyAxis("y", valueRange = yaxis_range)
     }
     
@@ -86,7 +87,7 @@ e4_timeseries_plot <- function(data,
         
         txt <- ifelse(events_label, events$Text[i], "")
         
-        out <- out %>%
+        out <- out |>
           dyEvent(events$Start[i], txt, labelLoc="bottom")
         
       }
@@ -97,7 +98,7 @@ e4_timeseries_plot <- function(data,
       if(nrow(eventsub)){
         for(i in 1:nrow(eventsub)){
           
-          out <- out %>%
+          out <- out |>
             dyShading(from = eventsub$Start[i],
                       to = eventsub$End[i],
                       color = eventsub$Color[i])
@@ -113,7 +114,7 @@ e4_timeseries_plot <- function(data,
         
         txt <- ifelse(tag_label, "Tag", "")
         
-        out <- out %>%
+        out <- out |>
           dyEvent(tags$DateTime[i], txt, 
                   labelLoc="bottom",
                   color = "red", strokePattern = "solid"
@@ -158,7 +159,7 @@ e4_timeseries_plot <- function(data,
                y_line_type = series_options$MOVE$line_type,
                y_line_val = series_options$MOVE$custom_y_val,
                yaxis_range = series_options$MOVE$yaxis_range,
-               color = constants$app_config$visualisation$move$color) %>%
+               color = constants$app_config$visualisation$move$color) |>
       dyRangeSelector()
   )
 }
