@@ -2,17 +2,19 @@
 box::use(
   bslib[card, card_header],
   shiny[NS, fluidRow, tags, column, fileInput, actionButton, htmlOutput, icon,
-        uiOutput, tagList, br],
+        uiOutput, tagList, br, moduleServer],
   shinyjs[hidden]
 )
 
 box::use(
-  app/logic/functions
+  app/logic/constants,
+  app/logic/functions,
+  app/view/components/helpButton
 )
 
-#' @export
 ui <- function(id) {
   ns <- NS(id)
+  
   tagList(
     
     card(
@@ -48,7 +50,7 @@ ui <- function(id) {
       card_header("Data input"),
       tags$div(style = "width: 100%;",
                tags$div(style = "float: right;",
-                        #helpButtonUI(ns("help"))
+                        helpButton$ui(ns("help"))
                )
       ),
       
@@ -86,11 +88,11 @@ ui <- function(id) {
   )
 }
 
-#' @export
-server <- function(input, output, session) {
-  serverModule(id, function(input, output, session) {
-    # observeEvent(input$mybutton, {
-    #   shinyjs::toggle(id = "mydiv")
-    # })
+server <- function(id) {
+  moduleServer(id, function(input, output, session) {
+    
+    # Modules ---------------------------------------
+    helpButton$server("help", helptext = constants$help_config$dataupload)
+    
   })
 }

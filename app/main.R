@@ -29,12 +29,13 @@ ui <- function(id) {
     id = ns("navbar_id"),
     title = "Wearalyze",
     theme = constants$wearalyze_theme,
+    fillable = FALSE,
     nav_menu(
       title = "E4",
       icon = icon("heart-circle-bolt"),
       nav_panel("Data",
                 icon = icon("file-upload"),
-                dataUpload$ui("data")
+                dataUpload$ui(ns("e4-data"))
       ),
       nav_panel("Calendar",
                 icon = icon("calendar-alt"),
@@ -150,8 +151,11 @@ ui <- function(id) {
 server <- function(id) {
   moduleServer(id, function(input, output, session) {
     
-    # reactive values
+    # Reactive values -------------------------------
     r <- reactiveValues(placeholder = NULL)
+    
+    # Modules ---------------------------------------
+    dataUpload$server(id = "e4-data")
     
   })
 }
