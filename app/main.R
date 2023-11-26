@@ -11,7 +11,8 @@ box::use(
   app/logic/constants,
   app/view/dataUpload,
   app/view/calendar,
-  app/view/visualization
+  app/view/visualization,
+  app/view/analysis
 )
 
 #' @export
@@ -49,21 +50,16 @@ ui <- function(id) {
       nav_panel("Visualization",
                 icon = icon("chart-bar"),
                 visualization$ui(ns("e4-visualization"))
-                
       ),
       nav_panel("Analysis",
                 icon = icon("chart-line"),
-                card(
-                  p("placeholder")
-                )
-                
+                analysis$ui(ns("e4-analysis"))
       ),
       nav_panel("Batch analysis",
                 icon = icon("list-ol"),
                 card(
                   p("placeholder")
                 )
-                
       )
     ),
     nav_menu(
@@ -95,14 +91,12 @@ ui <- function(id) {
                 card(
                   p("placeholder")
                 )
-                
       ),
       nav_panel("Batch analysis",
                 icon = icon("list-ol"),
                 card(
                   p("placeholder")
                 )
-                
       )
     ),
     nav_menu(
@@ -155,11 +149,16 @@ server <- function(id) {
     r <- reactiveValues(placeholder = NULL)
     
     # Modules ---------------------------------------
+    ## E4 -------------------------------------------
     e4_data_in <- dataUpload$server(id = "e4-data")
-    e4_calendar <- calendar$server(id = "e4-calendar")
     e4_calendar <- calendar$server(id = "e4-calendar")
     e4_visualization <- visualization$server(id = "e4-visualization",
                                              data = e4_data_in)
+    
+    analysis$server(id = "e4-analysis",
+                    data = e4_data_in,
+                    plots = e4_visualization,
+                    calendar = e4_calendar)
     
   })
 }
