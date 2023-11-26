@@ -1,15 +1,21 @@
 
 box::use(
   bslib[card, card_body, card_header],
+  dplyr[group_by, select, summarize],
+  dygraphs[dyAxis, dygraph, dyRangeSelector, dyOptions],
+  kableExtra[kable, kable_styling],
   lubridate[day, hour, minute, month, second, year],
+  padr[thicken],
+  rmarkdown[render],
   shiny[actionButton, bindEvent, dateInput, div, downloadButton, downloadHandler, NS, numericInput,
         fluidRow, tags, updateDateInput, updateNumericInput, column, icon,
         uiOutput, moduleServer, observe, p,
         reactive, reactiveVal, renderUI, req, tagList],
   shinyjs[hidden, hide, show],
   shinytoastr[toastr_info, toastr_warning],
+  utils[tail],
   wearables[filter_e4data_datetime, process_e4],
-  rmarkdown[render]
+  xts[xts]
 )
 
 box::use(
@@ -187,7 +193,7 @@ server <- function(id, data = reactive(NULL), plots = reactive(NULL), calendar =
         
         toastr_info("Download in preparation ...")
         tempReport <- file.path(tempdir(), "report.Rmd")
-        file.copy("./app/static/report.Rmd", tempReport, overwrite = TRUE)
+        file.copy("./app/static/reports/report.Rmd", tempReport, overwrite = TRUE)
         
         analysis <- last_analysis()
         calendar <- calendar()
