@@ -1,9 +1,13 @@
 
 box::use(
   bslib[card, card_header],
-  shiny[NS, fluidRow, tags, column, fileInput, actionButton, htmlOutput, icon,
-        uiOutput, tagList, br, moduleServer],
-  shinyjs[hidden]
+  glue[glue],
+  shiny[bindEvent, div, NS, fluidRow, tags, column, fileInput, actionButton, htmlOutput, icon,
+        uiOutput, reactiveValues, tagList, br, moduleServer, observe, p, withProgress,
+        renderUI, req, reactive, incProgress],
+  shinyjs[hidden, hide, show],
+  shinytoastr[toastr_success, toastr_error],
+  wearables[aggregate_e4_data, rbind_e4, read_e4]
 )
 
 box::use(
@@ -76,23 +80,159 @@ ui <- function(id) {
       ),
       
       hidden(
-        tags$div(id = ns("div_restart_application"),
-                 
-                 actionButton(ns("btn_restart_app"), "Reset and start over",
-                              icon = icon("sync"), class = "btn-lg btn-success")
-                 
+        div(id = ns("div_restart_application"),
+            actionButton(ns("btn_restart_app"), "Reset and start over",
+                         icon = icon("sync"), class = "btn-lg btn-success")
         )
       )
     )
-
+    
   )
 }
 
 server <- function(id) {
   moduleServer(id, function(input, output, session) {
     
-    # Modules ---------------------------------------
+    # Reactive values -------------------------------
+    rv <- reactiveValues(
+      zip_files = NULL,
+      data = NULL,
+      timeseries = NULL,
+      data_agg = NULL,
+      newdata = NULL,
+      fn_names = NULL
+    )
+    
+    # Modules --------------------------------------
     helpButton$server("help", helptext = constants$help_config$dataupload)
+    
+    # Functionality ---------------------------------
+    observe({
+      rv$zip_files <- data.frame(
+        name = "1574839870_A00204.zip",
+        size = NA,
+        type = "application/x-zip-compressed",
+        datapath = "./app/static/example_data/1574839870_A00204.zip"
+      )
+    }) |> bindEvent(input$btn_use_example_data_large)
+    
+    observe({
+      rv$zip_files <- data.frame(
+        name = "1635148245_A00204.zip",
+        size = NA,
+        type = "application/x-zip-compressed",
+        datapath = "./app/static/example_data/1635148245_A00204.zip"
+      )
+    }) |> bindEvent(input$btn_use_example_data_small)
+    
+    observe({
+      rv$zip_files <- input$select_zip_files
+    })
+    
+    observe({
+      
+      # Read selected ZIP files
+      fns <- rv$zip_files$datapath
+      fn_names <- rv$zip_files$name
+      rv$fn_names <- fn_names
+      
+      # Read data into a list (Each element of the list contents from 1 zip file)
+      data <- list()
+      n <- length(fns) + 1
+      withProgress(message = "Reading data...", value = 0, {
+        
+        for(i in seq_along(fns)){
+          
+          incProgress(1/n, detail = fn_names[i])
+          
+          out <- read_e4(fns[i])
+          if(is.null(out)){
+            
+            toastr_error("One or more data files empty - check data!")
+            break
+            
+          } else {
+            data[[i]] <- out  
+          }
+          
+        }
+        
+        if(length(data) > 0){
+          
+          # If more than 1 zip file selected, row-bind them using our custom function
+          incProgress(1/n, detail = "Row-binding")
+          if(length(fns) > 1){
+            rv$data <- rbind_e4(data)
+          } else {
+            rv$data <- data[[1]]
+          }
+          
+          # Calculate aggregated version of the data for much quicker plotting
+          rv$data_agg <- aggregate_e4_data(rv$data)
+          
+          rv$newdata <- runif(1)
+          
+          # Message: data read!
+          toastr_success("Data read successfully.")
+          
+          functions$enable_link("tabCalendar")
+          functions$enable_link("tabVisualization")
+          functions$enable_link("tabCut")
+          
+          hide("div_upload_file")
+          show("div_restart_application")
+          
+        } else {
+          
+          functions$disable_link("tabCalendar")
+          functions$disable_link("tabVisualization")
+          functions$disable_link("tabCut")
+        }
+        
+      })
+      
+    }) |> bindEvent(input$select_zip_files)
+    
+    output$msg_data_read <- renderUI({
+      
+      req(rv$data)
+      tagList(
+        tags$p("Data was uploaded and read successfully. Go to the Calendar Tab.",
+               style = "color: blue;"),
+        tags$p("To read in a new dataset, upload a new Zip file.")
+      )
+      
+    })
+    
+    
+    output$msg_files_selected <- renderUI({
+      
+      req(rv$zip_files)
+      n <- nrow(rv$zip_files)
+      if(n > 0){
+        p(glue("You have selected {n} ZIP files."))
+      }
+      
+    })
+    
+    observe({
+      session$reload()
+    }) |> bindEvent(input$btn_restart_app)
+    
+    
+    out <- reactive({
+      
+      list(
+        data = rv$data,
+        data_agg = rv$data_agg,
+        timeseries = rv$timeseries,
+        newdata = rv$newdata,
+        fn_names = rv$fn_names
+      )
+      
+    })
+    
+    return(out)
     
   })
 }
