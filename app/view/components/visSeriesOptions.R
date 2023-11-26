@@ -41,8 +41,6 @@ server <- function(id, selected = c("mean", "custom"), custom_y = 0) {
       
       req(input$check_line_type)
       
-      print(input$check_line_type)
-      
       if(input$check_line_type == "custom"){
         numericInput(session$ns("num_custom_y"), "Y-value", value = custom_y, width = 100)
       } else {
