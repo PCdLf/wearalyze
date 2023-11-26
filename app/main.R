@@ -3,12 +3,14 @@ box::use(
   shiny[bootstrapPage, div, moduleServer, NS, renderUI, tags, uiOutput, icon, tagList, br,
         reactiveValues, p],
   shinyjs[useShinyjs],
+  shinytoastr[useToastr],
   waiter[useWaiter, waiterPreloader, spin_6]
 )
 
 box::use(
   app/logic/constants,
-  app/view/dataUpload
+  app/view/dataUpload,
+  app/view/calendar
 )
 
 #' @export
@@ -17,6 +19,7 @@ ui <- function(id) {
   page_navbar(
     header = tagList(
       useShinyjs(),
+      useToastr(),
       # useWaiter(),
       # waiterPreloader(
       #   html = tagList(spin_6(),
@@ -39,10 +42,7 @@ ui <- function(id) {
       ),
       nav_panel("Calendar",
                 icon = icon("calendar-alt"),
-                card(
-                  p("placeholder")
-                )
-                
+                calendar$ui(ns("e4-calendar"))
       ),
       nav_panel("Visualization",
                 icon = icon("chart-bar"),
@@ -155,7 +155,8 @@ server <- function(id) {
     r <- reactiveValues(placeholder = NULL)
     
     # Modules ---------------------------------------
-    dataUpload$server(id = "e4-data")
+    e4_data_in <- dataUpload$server(id = "e4-data")
+    e4_calendar <- calendar$server(id = "e4-calendar")
     
   })
 }
