@@ -8,7 +8,7 @@ box::use(
 
 box::use(
   app/logic/constants,
-  app/view/components/dataUpload
+  app/view/dataUpload
 )
 
 #' @export
