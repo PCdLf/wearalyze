@@ -7,6 +7,7 @@ box::use(
         renderUI, req, reactive, incProgress],
   shinyjs[hidden, hide, show],
   shinytoastr[toastr_success, toastr_error],
+  stats[runif],
   wearables[aggregate_e4_data, rbind_e4, read_e4]
 )
 
@@ -131,6 +132,8 @@ server <- function(id) {
     
     observe({
       
+      req(rv$zip_files)
+      
       # Read selected ZIP files
       fns <- rv$zip_files$datapath
       fn_names <- rv$zip_files$name
@@ -191,7 +194,7 @@ server <- function(id) {
         
       })
       
-    }) |> bindEvent(input$select_zip_files)
+    })
     
     output$msg_data_read <- renderUI({
       
