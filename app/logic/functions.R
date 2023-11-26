@@ -1,6 +1,7 @@
 
 box::use(
   dplyr[mutate],
+  glue[glue],
   lubridate[year, month, day, hour, minute, second],
   readxl[read_excel],
   shiny[div, tags],
@@ -8,6 +9,10 @@ box::use(
   tibble[as_tibble, tribble],
   tools[file_ext],
   utils[read.csv2]
+)
+
+box::use(
+  app/logic/constants
 )
 
 hide_tab <- function(value){
@@ -101,7 +106,7 @@ validate_calendar <- function(data){
 calendar_add_color <- function(data, app_config){
   
   if(!"Color" %in% names(data)){
-    data$Color <- .app_config$visualisation$default_color
+    data$Color <- constants$app_config$visualisation$default_color
   }
   
   return(data)
