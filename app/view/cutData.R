@@ -206,7 +206,7 @@ server <- function(id, data = reactive(NULL)) {
       }
       
       if(!is.na(chc)){
-        folder_in(chc)  
+        folder_out(chc)  
       }
       
     }) 
