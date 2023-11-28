@@ -7,6 +7,7 @@ box::use(
   shiny[div, tags],
   shinyjs[addCssClass, hide, show, removeCssClass],
   tibble[as_tibble, tribble],
+  tcltk[tk_choose.dir],
   tools[file_ext],
   utils[read.csv2]
 )
@@ -111,4 +112,15 @@ calendar_add_color <- function(data, app_config){
   
   return(data)
 }
+
+choose_directory <- function(caption = 'Select data directory') {
+  
+  if (.Platform$OS.type == "windows") {
+    choose.dir(caption = caption) 
+  } else {
+    tk_choose.dir(caption = caption)
+  }
+  
+}
+
 

@@ -12,7 +12,8 @@ box::use(
   app/view/dataUpload,
   app/view/calendar,
   app/view/visualization,
-  app/view/analysis
+  app/view/analysis,
+  app/view/cutData
 )
 
 #' @export
@@ -54,6 +55,10 @@ ui <- function(id) {
       nav_panel("Analysis",
                 icon = icon("chart-line"),
                 analysis$ui(ns("e4-analysis"))
+      ),
+      nav_panel("Data cutter",
+                icon = icon("cut"),
+                cutData$ui(ns("e4-cut"))
       ),
       nav_panel("Batch analysis",
                 icon = icon("list-ol"),
@@ -159,6 +164,9 @@ server <- function(id) {
                     data = e4_data_in,
                     plots = e4_visualization,
                     calendar = e4_calendar)
+    
+    cutData$server(id = "e4-cut",
+                   data = e4_data_in)
     
   })
 }
