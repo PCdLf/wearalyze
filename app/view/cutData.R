@@ -5,6 +5,7 @@ box::use(
   shiny[actionButton, column, bindEvent, br, dateInput, div, fluidRow, icon,
         moduleServer, numericInput, NS, observe, p, reactive, reactiveVal, 
         renderUI, req, tagList, tags, uiOutput, updateDateInput, updateNumericInput],
+  shinyFiles[shinyDirButton, shinyDirChoose],
   shinyjs[disable, enable, hidden, hide, show, toggleState],
   shinytoastr[toastr_info, toastr_success],
   wearables[filter_createdir_zip]
@@ -41,8 +42,11 @@ ui <- function(id) {
                             value = 5, min = 1, step = 1),
                
                functions$side_by_side(
-                 actionButton(ns("btn_select_folder_output"), "Select output folder", 
-                              icon = icon("folder-open"), class = "btn-light"),
+                 shinyDirButton(ns("btn_select_folder_input"), 
+                                label = "Select input folder",
+                                title = "Select input folder",
+                                icon = icon("folder-open"), 
+                                class = "btn-light"),
                  uiOutput(ns("ui_folder_out"), inline = TRUE)
                ),
                
@@ -126,6 +130,11 @@ server <- function(id, data = reactive(NULL)) {
     helpButton$server("help", helptext = constants$help_config$cut)
     
     # Functionality ---------------------------------
+    shinyDirChoose(input, 
+                   "btn_select_folder_input",
+                   roots = c(home = "~", 
+                             wd = "."))
+    
     observe({
       
       data <- data()$data
@@ -186,13 +195,15 @@ server <- function(id, data = reactive(NULL)) {
     
     observe({
       
-      chc <- functions$choose_directory()
+      req(input$btn_select_folder_output)
+      
+      chc <- input$btn_select_folder_output
       
       if(!is.na(chc)){
         folder_out(chc)
       }
       
-    }) |> bindEvent(input$btn_select_folder_output)
+    })
     
     output$ui_folder_out <- renderUI({
       
