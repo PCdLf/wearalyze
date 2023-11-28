@@ -13,7 +13,8 @@ box::use(
   app/view/calendar,
   app/view/visualization,
   app/view/analysis,
-  app/view/cutData
+  app/view/cutData,
+  app/view/batch
 )
 
 #' @export
@@ -62,9 +63,7 @@ ui <- function(id) {
       ),
       nav_panel("Batch analysis",
                 icon = icon("list-ol"),
-                card(
-                  p("placeholder")
-                )
+                batch$ui(ns("e4-batch"))
       )
     ),
     nav_menu(
@@ -167,6 +166,8 @@ server <- function(id) {
     
     cutData$server(id = "e4-cut",
                    data = e4_data_in)
+    
+    batch$server(id = "e4-batch")
     
   })
 }
