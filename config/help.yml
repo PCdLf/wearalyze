@@ -1,0 +1,113 @@
+dataupload: >
+  Select a ZIP file here, recorded by the <strong>Empatica E4</strong><br>
+  <br>
+  Data must be in the standard format provided by Empatica.<br>
+  A zip-file downloaded from Empatica contains several csv files that contain information on the physiological data that is recorded with the Empatica E4 
+  <br?
+  .csv files in this archive are in the following format:<br>
+  The first row is the initial time of the session expressed as unix timestamp in UTC.<br>
+  The second row is the sample rate expressed in Hz.<br>
+  <br>
+  <strong>TEMP.csv:</strong> Data from temperature sensor expressed degrees on the Celsius (°C) scale.<br>
+  <br>
+  <strong>EDA.csv:</strong> Data from the electrodermal activity sensor expressed as microsiemens (μS).<br>
+  <br>
+  <strong>BVP.csv:</strong> Data from photoplethysmograph.<br>
+  <br>
+  <strong>ACC.csv:</strong> Data from 3-axis accelerometer sensor.<br>
+  The accelerometer is configured to measure acceleration in the range [-2g, 2g].<br>
+  Therefore the unit in this file is 1/64g.<br>
+  Data from x, y, and z axis are respectively in first, second, and third column.<br>
+  <br>
+  <strong>IBI.csv:</strong> Time between individuals heart beats extracted from the BVP signal.<br>
+  No sample rate is needed for this file.<br>
+  The first column is the time (respect to the initial time) of the detected inter-beat<br>
+  interval expressed in seconds (s).
+  The second column is the duration in seconds (s) of the detected inter-beat interval<br>
+  (i.e., the distance in seconds from the previous beat).<br>
+  <br>
+  <strong>HR.csv:</strong> Average heart rate extracted from the BVP signal.
+  <br>
+  The first row is the initial time of the session expressed as unix timestamp in UTC. The second row is the sample rate expressed in Hz.<br>
+  <br>
+  <strong>tags.csv:</strong> Event mark times.<br>
+  Each row corresponds to a physical button press on the device; the same time as the status LED is first illuminated. The time is expressed as a unix timestamp in UTC and it is synchronized with initial time of the session indicated in the related data files from the corresponding session.
+  
+calendar: >
+  Select a calendar file here. A calendar is an XLSX/XLS/TXT file that contains a table with five columns.<br>
+  The column names are used by the application, so make sure to name them accordingly, and also use the correct date and time format.<br>
+  <br>
+  1. <strong>Date:</strong> a day-month-year variable  ("dd-mm-yyyy" format). <br>
+  2. <strong>Start:</strong> an hour:minute:seconds variable ("hh:mm:ss" format).<br>
+  3. <strong>End:</strong> an hour:minute:seconds variable ("hh:mm:ss" format).<br>
+  4. <strong>Text:</strong> Text variable that needs to be displayed in the graph.<br>
+  4. <strong>Color:</strong> The color to be used for shading the graph. R colornames can be found here: www.stat.columbia.edu/~tzheng/files/Rcolor.pdf <br>
+  <br>
+  The start and end columns are used to shade the time duration periods in the graph.<br>
+  <br>
+  <html>
+  <body>
+  <h2>Example of a calendar file</h2>
+  <table style="width:100%">
+  <tr>
+    <th>Date</th>
+    <th>Start</th> 
+    <th>End</th>
+    <th>Text</th>
+    <th>Color</th>
+  </tr>
+  <tr>
+    <td>09-06-2021</td>
+    <td>10:30:00</td>
+    <td>13:30:00</td>
+    <td>Therapy</td>
+    <td>lightblue</td>
+  </tr>
+  <tr>
+    <td>09-06-2021</td>
+    <td>14:00:00</td>
+    <td>17:00:00</td>
+    <td>Work</td>
+    <td>lightgray</td>
+  </tr>
+  <tr>
+    <td>09-06-2021</td>
+    <td>18:00:00</td>
+    <td>19:00:00</td>
+    <td>Diner</td>
+    <td>lemonchiffon</td>
+  </tr>
+  </table>
+  </body>
+  </html>
+  
+  
+visualization: > 
+  The Visualization tab has a Settings tab and a Plot tab (which is hidden).<br>
+  <br>
+  In the Settings tab the user can add a title to the plot and decide if the annotations should be displayed.<br> 
+  <br>
+  On the right side of the Settings tab, the user has the option to set the ranges of the graphs, and add mean values or custom values to be displayed.<br>
+  <br>
+  After the Settings tab has been set, the user can press the "Make Plot" button and view the Plot tab for the plots of the physiological signals.<br>
+  <br>
+  Note that the plots use an aggregated version of the physiological signals (5 minute aggregates) to speed up the visualization. 
+
+analysis: >
+  
+  The user can select a time frame for which the features should be extracted. By default the entire recording period is selected. <br>
+  The analysis will only be run on that specific time period and extracted features will appear in the box below.
+  
+report: >
+  Create a report that contains the graph, the analysis and the calendar data. <br>
+  The report is created as an HTML page.
+  
+batch: >
+  Users can batch process large amounts of Empatica E4 files here and set parameters accordingly.
+  
+cut: >
+  Cut your ZIP file into multiple files.\
+
+  
+
+

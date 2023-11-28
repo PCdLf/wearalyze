@@ -1,0 +1,15 @@
+visualisation:
+  eda:
+    yrange: [0,20]
+    color: "#1874CD"
+  hr:
+    yrange: [40, 160]
+    color: "#FF7F00"
+  temp:
+    yrange: [24, 38]
+    color: "#458B00"
+  move:
+    yrange: [0.98, 1.25]
+    color: "#68228B"
+    custom_y: 1.07
+  default_color: "blue"
