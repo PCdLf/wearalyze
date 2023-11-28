@@ -42,9 +42,9 @@ ui <- function(id) {
                             value = 5, min = 1, step = 1),
                
                functions$side_by_side(
-                 shinyDirButton(ns("btn_select_folder_input"), 
-                                label = "Select input folder",
-                                title = "Select input folder",
+                 shinyDirButton(ns("btn_select_folder_output"), 
+                                label = "Select output folder",
+                                title = "Select output folder",
                                 icon = icon("folder-open"), 
                                 class = "btn-light"),
                  uiOutput(ns("ui_folder_out"), inline = TRUE)
@@ -131,7 +131,7 @@ server <- function(id, data = reactive(NULL)) {
     
     # Functionality ---------------------------------
     shinyDirChoose(input, 
-                   "btn_select_folder_input",
+                   "btn_select_folder_output",
                    roots = c(home = "~", 
                              wd = "."))
     
@@ -197,13 +197,19 @@ server <- function(id, data = reactive(NULL)) {
       
       req(input$btn_select_folder_output)
       
-      chc <- input$btn_select_folder_output
-      
-      if(!is.na(chc)){
-        folder_out(chc)
+      if(length(input$btn_select_folder_output) > 1){
+        chc <- paste0(ifelse(input$btn_select_folder_output$root == "home", "~", "."), 
+                      paste0(input$btn_select_folder_output$path, collapse = "/")
+        )
+      } else {
+        chc <- NA
       }
       
-    })
+      if(!is.na(chc)){
+        folder_in(chc)  
+      }
+      
+    }) 
     
     output$ui_folder_out <- renderUI({
       
