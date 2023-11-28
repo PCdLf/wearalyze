@@ -102,7 +102,7 @@ ui <- function(id) {
   
 }
 
-server <- function(id, data = reactive(NULL), calendar = reactive(NULL)) {
+server <- function(id, data = reactive(NULL), calendar = reactive(NULL), device) {
   moduleServer(id, function(input, output, session) {
     
     # Reactive values -------------------------------
@@ -227,7 +227,8 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL)) {
       # 
       toastr_success("Plot constructed, click on the 'Plot' tab!")
       updateActionButton(session, "btn_make_plot", label = "Update plot", icon = icon("sync"))
-      functions$enable_link("tabAnalysis")
+      functions$enable_link(menu = device,
+                            name = "Analysis")
       
     }) |> bindEvent(input$btn_make_plot)
     

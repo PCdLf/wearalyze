@@ -23,13 +23,15 @@ show_tab <- function(value){
   show(selector = glue("li > a[data-value='{value}']")) 
 }
 
-disable_link <- function(name){
-  addCssClass(selector = glue("a[data-value='{name}']"), 
+disable_link <- function(menu, name){
+  addCssClass(selector = glue("a[data-value='{menu}'] + ul > li > a[data-value='{name}']",
+                              menu = paste0(menu, "-menu")),
               class = "inactivelink")
 }
 
-enable_link <- function(name){
-  removeCssClass(selector = glue("a[data-value='{name}']"), 
+enable_link <- function(menu, name){
+  removeCssClass(selector = glue("a[data-value='{menu}'] + ul > li > a[data-value='{name}']",
+                                 menu = paste0(menu, "-menu")),
                  class = "inactivelink")
 }
 

@@ -91,7 +91,7 @@ ui <- function(id) {
   )
 }
 
-server <- function(id) {
+server <- function(id, device) {
   moduleServer(id, function(input, output, session) {
     
     # Reactive values -------------------------------
@@ -178,18 +178,18 @@ server <- function(id) {
           # Message: data read!
           toastr_success("Data read successfully.")
           
-          functions$enable_link("tabCalendar")
-          functions$enable_link("tabVisualization")
-          functions$enable_link("tabCut")
+          functions$enable_link(menu = device, name = "Calendar")
+          functions$enable_link(menu = device, name = "Visualization")
+          functions$enable_link(menu = device, name = "Data cutter")
           
           hide("div_upload_file")
           show("div_restart_application")
           
         } else {
           
-          functions$disable_link("tabCalendar")
-          functions$disable_link("tabVisualization")
-          functions$disable_link("tabCut")
+          functions$disable_link(menu = device, name = "Calendar")
+          functions$disable_link(menu = device, name = "Visualization")
+          functions$disable_link(menu = device, name = "Data cutter")
         }
         
       })

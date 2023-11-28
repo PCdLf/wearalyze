@@ -9,6 +9,7 @@ box::use(
 
 box::use(
   app/logic/constants,
+  app/logic/functions,
   app/view/dataUpload,
   app/view/calendar,
   app/view/visualization,
@@ -68,6 +69,7 @@ ui <- function(id) {
     ),
     nav_menu(
       title = "Embrace Plus",
+      value = "embrace-plus-menu",
       icon = icon("heart-pulse"),
       nav_panel("Data",
                 icon = icon("file-upload"),
@@ -105,6 +107,7 @@ ui <- function(id) {
     ),
     nav_menu(
       title = "Nowatch",
+      value = "nowatch-menu",
       icon = icon("clock"),
       nav_panel("Data",
                 icon = icon("file-upload"),
@@ -149,15 +152,24 @@ ui <- function(id) {
 server <- function(id) {
   moduleServer(id, function(input, output, session) {
     
-    # Reactive values -------------------------------
-    r <- reactiveValues(placeholder = NULL)
+    # Init ------------------------------------------
+    for (device in c("e4", "embrace-plus", "nowatch")) {
+      functions$disable_link(menu = device, name = "Calendar")
+      functions$disable_link(menu = device, name = "Visualization")
+      functions$disable_link(menu = device, name = "Data cutter")
+      functions$disable_link(menu = device, name = "Analysis") 
+    }
     
     # Modules ---------------------------------------
     ## E4 -------------------------------------------
-    e4_data_in <- dataUpload$server(id = "e4-data")
+    e4_data_in <- dataUpload$server(id = "e4-data", 
+                                    device = "e4")
+    
     e4_calendar <- calendar$server(id = "e4-calendar")
+    
     e4_visualization <- visualization$server(id = "e4-visualization",
-                                             data = e4_data_in)
+                                             data = e4_data_in,
+                                             device = "e4")
     
     analysis$server(id = "e4-analysis",
                     data = e4_data_in,
