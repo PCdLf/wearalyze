@@ -1,0 +1,81 @@
+
+box::use(
+  bslib[nav_menu, nav_panel],
+  shiny[icon, moduleServer, NS]
+)
+
+box::use(
+  app/view/dataUpload,
+  app/view/calendar,
+  app/view/visualization,
+  app/view/analysis,
+  app/view/cutData,
+  app/view/batch
+)
+
+ui <- function(id, device){
+  
+  ns <- NS(id)
+  
+  device_name <- device
+  device <- tolower(gsub(" ", "-", device))
+  
+  nav_menu(
+    title = device_name,
+    value = paste0(device, "-menu"),
+    icon = icon("heart-circle-bolt"),
+    nav_panel("Data",
+              icon = icon("file-upload"),
+              dataUpload$ui(ns(paste0(device, "-data")))
+    ),
+    nav_panel("Calendar",
+              icon = icon("calendar-alt"),
+              calendar$ui(ns(paste0(device, "-calendar")))
+    ),
+    nav_panel("Visualization",
+              icon = icon("chart-bar"),
+              visualization$ui(ns(paste0(device, "-visualization")))
+    ),
+    nav_panel("Analysis",
+              icon = icon("chart-line"),
+              analysis$ui(ns(paste0(device, "-analysis")))
+    ),
+    nav_panel("Data cutter",
+              icon = icon("cut"),
+              cutData$ui(ns(paste0(device, "-cut")))
+    ),
+    nav_panel("Batch analysis",
+              icon = icon("list-ol"),
+              batch$ui(ns(paste0(device, "-batch")))
+    )
+  )
+  
+}
+
+server <- function(id, device) {
+  moduleServer(id, function(input, output, session) {
+    
+    device <- tolower(gsub(" ", "-", device))
+    
+    # Modules ---------------------------------------
+    data_in <- dataUpload$server(id = paste0(device, "-data"), 
+                                    device = device)
+    
+    calendar <- calendar$server(id = paste0(device, "-calendar"))
+    
+    visualization <- visualization$server(id = paste0(device, "-visualization"),
+                                             data = data_in,
+                                             device = device)
+    
+    analysis$server(id = paste0(device, "-analysis"),
+                    data = data_in,
+                    plots = visualization,
+                    calendar = calendar)
+    
+    cutData$server(id = paste0(device, "-cut"),
+                   data = data_in)
+    
+    batch$server(id = paste0(device, "-batch"))
+    
+  })
+}
