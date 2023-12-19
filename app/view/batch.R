@@ -7,7 +7,8 @@ box::use(
         verbatimTextOutput, withProgress],
   shinyFiles[shinyDirButton, shinyDirChoose],
   shinyjs[disable, enable, hidden, hide, show],
-  shinytoastr[toastr_info, toastr_success]
+  shinytoastr[toastr_info, toastr_success],
+  wearables[read_and_process_e4]
 )
 
 box::use(
