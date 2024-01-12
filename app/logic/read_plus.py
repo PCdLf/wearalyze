@@ -22,10 +22,9 @@ def get_timestamp_column(start_time,sampling_freq,len_list):
     timestamp_df['unix_timestamp'] = timestamp_df['timestamp'].astype('int64') // 10**9
     return timestamp_df
 
-def get_avro_content(zip_file_path,avro_file_path_within_zip):
+def get_avro_content(zip_file_path, avro_file_path_within_zip, extracted_folder):
     
     # Extract the contents of the zip file
-    extracted_folder = r'C:\Users\acans\Desktop\extracted_data'
     with zipfile.ZipFile(zip_file_path, 'r') as zip_ref:
         zip_ref.extractall(extracted_folder)
     
@@ -145,7 +144,7 @@ def get_avro_content(zip_file_path,avro_file_path_within_zip):
         
     return avro_records
 
-def read_e4_plus(root):
+def read_e4_plus(root, extracted_folder):
     
     avro_content=[]   
     zf = ZipFile(root)
@@ -154,13 +153,8 @@ def read_e4_plus(root):
     avro_file_names = [file_name for file_name in file_names if file_name.lower().endswith(".avro")]
     
     for file in avro_file_names:    
-        avro_content+=get_avro_content(root,file)
+        avro_content+=get_avro_content(root, file, extracted_folder)
             
     return avro_content
 
 print('Python Script Loaded Successfully')
-
-# Example file added under app\static\example_data
-root=r'C:\Users\acans\Desktop\2023-07-11.zip'
-#avro_files=read_e4_plus(root)
-
