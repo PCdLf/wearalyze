@@ -1,0 +1,9 @@
+fastavro==1.9.2
+numpy==1.26.3
+pandas==2.1.4
+python-dateutil==2.8.2
+pytz==2023.3.post1
+setuptools==69.0.3
+six==1.16.0
+tzdata==2023.4
+wheel==0.42.0

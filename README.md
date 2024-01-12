@@ -28,3 +28,7 @@ Or alternatively, you can head over to the app.R file and click the "Run App" bu
 # For developers
 
 Since this project is using `renv` to manage project dependencies, it is required to snapshot the project library after installing new packages. This can be done by running `renv::snapshot()` which will make changes to the `renv.lock` file. Make sure that the dependencies are recorded in the `dependencies.R` file! 
+
+## Python dependencies
+
+`renv` is also equipped to handle Python dependencies. These Python dependencies are stored in requirements.txt. This happens automatically when you call `renv::restore()`, so make sure to do so when you have worked on .py scripts. `renv` will automatically look for import statements in the .py files and add the required packages to the requirements.txt file.
