@@ -8,6 +8,7 @@ box::use(
   shinyjs[hidden, hide, show],
   shinytoastr[toastr_success, toastr_error],
   stats[runif],
+  stringr[str_to_title],
   wearables[aggregate_e4_data, rbind_e4, read_e4]
 )
 
@@ -17,7 +18,14 @@ box::use(
   app/view/components/helpButton
 )
 
-ui <- function(id) {
+ui <- function(id, device) {
+  
+  company <- functions$get_device_company(device)
+  
+  device_name <- functions$get_device_name(device, title = TRUE)
+  
+  print(device_name)
+  
   ns <- NS(id)
   
   tagList(
@@ -26,16 +34,16 @@ ui <- function(id) {
       card_header("Start"),
       fluidRow(
         column(6, 
-               tags$p("This Shiny application was designed to visualize and process Empatica E4 data."),
-               tags$p("The Empatica E4 is a wearable wristband that can be used to record physiological signals such as heart rate, temperature, movement and skin conductance."),
+               tags$p(glue("This Shiny application was designed to visualize and process {company} {device_name} data.")),
+               tags$p(glue("The {company} {device_name} is a wearable wristband that can be used to record physiological signals such as heart rate, temperature, movement and skin conductance.")),
                tags$p("The data will not be permanently stored on the server, no trackers or cookies are used.")
         ),
         
         column(6,
-               tags$img(src= "static/devices/e4_hero_device-lg-hdpi.jpg", 
+               tags$img(src= glue("static/devices/{device}.png"), 
                         height="150px", 
                         width="150px", 
-                        align="left",href="https://www.empatica.com/research/e4/",target = "_blank")
+                        align="left", href="https://www.empatica.com/research/e4/", target = "_blank")
                
         )
       ),
@@ -60,7 +68,7 @@ ui <- function(id) {
       ),
       
       tags$div(id = ns("div_upload_file"),
-               tags$p("Click Browse to select E4 zip files to use in the application."),
+               tags$p(glue("Click Browse to select {device_name} zip files to use in the application.")),
                
                fileInput(ns("select_zip_files"),
                          label = "Choose ZIP file(s)", 

@@ -6,6 +6,7 @@ box::use(
   readxl[read_excel],
   shiny[div, tags],
   shinyjs[addCssClass, hide, show, removeCssClass],
+  stringr[str_to_title],
   tibble[as_tibble, tribble],
   tools[file_ext],
   utils[read.csv2]
@@ -112,4 +113,35 @@ calendar_add_color <- function(data, app_config){
   }
   
   return(data)
+}
+
+get_device_name <- function(device, title = FALSE){
+  
+  device <- gsub("-", " ", device)
+  
+  if (title){
+     device <- str_to_title(device)
+  }
+  
+  return(device)
+  
+}
+
+get_device_id <- function(device) {
+  
+  device <- tolower(gsub(" ", "-", device))
+  return(device)
+  
+}
+
+get_device_company <- function(device){
+  
+  if(device %in% c("e4", "embrace-plus")) {
+    company <- "Empatica"
+  } else {
+    company <- ""
+  }
+  
+  return(company)
+  
 }
