@@ -15,7 +15,8 @@ box::use(
 box::use(
   app/logic/constants,
   app/logic/functions,
-  app/view/components/helpButton
+  app/view/components/helpButton,
+  app/logic/read_plus[read_plus]
 )
 
 ui <- function(id, device) {
@@ -119,19 +120,19 @@ server <- function(id, device) {
     
     observe({
       rv$zip_files <- data.frame(
-        name = "1574839870_A00204.zip",
+        name = glue("{device}_large.zip"),
         size = NA,
         type = "application/x-zip-compressed",
-        datapath = "./app/static/example_data/1574839870_A00204.zip"
+        datapath = glue("./app/static/example_data/{device}_large.zip")
       )
     }) |> bindEvent(input$btn_use_example_data_large)
     
     observe({
       rv$zip_files <- data.frame(
-        name = "1635148245_A00204.zip",
+        name = glue("{device}_small.zip"),
         size = NA,
         type = "application/x-zip-compressed",
-        datapath = "./app/static/example_data/1635148245_A00204.zip"
+        datapath = glue("./app/static/example_data/{device}_small.zip")
       )
     }) |> bindEvent(input$btn_use_example_data_small)
     
@@ -157,7 +158,14 @@ server <- function(id, device) {
           
           incProgress(1/n, detail = fn_names[i])
           
-          out <- read_e4(fns[i])
+          switch(device,
+                 e4 = {
+                   out <- read_e4(fns[i])
+                 },
+                 `embrace-plus` = {
+                   out <- read_plus(fns[i])
+                 })
+          
           if(is.null(out)){
             
             toastr_error("One or more data files empty - check data!")
