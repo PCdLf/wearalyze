@@ -116,6 +116,10 @@ server <- function(id, device) {
     helpButton$server("help", helptext = constants$help_config$dataupload)
     
     # Functionality ---------------------------------
+    if (device != "e4") {
+      hide('btn_use_example_data_small')
+    } 
+    
     observe({
       rv$zip_files <- data.frame(
         name = "1574839870_A00204.zip",
