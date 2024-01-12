@@ -14,3 +14,4 @@ wearalyze_theme <- bs_theme(
 
 app_config <- read_yaml("config/config.yml")
 help_config <- read_yaml("config/help.yml")
+device_config <- read_yaml("config/devices.yml")

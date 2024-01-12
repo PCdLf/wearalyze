@@ -133,15 +133,3 @@ get_device_id <- function(device) {
   return(device)
   
 }
-
-get_device_company <- function(device){
-  
-  if(device %in% c("e4", "embrace-plus")) {
-    company <- "Empatica"
-  } else {
-    company <- ""
-  }
-  
-  return(company)
-  
-}

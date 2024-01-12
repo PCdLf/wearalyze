@@ -20,11 +20,7 @@ box::use(
 
 ui <- function(id, device) {
   
-  company <- functions$get_device_company(device)
-  
   device_name <- functions$get_device_name(device, title = TRUE)
-  
-  print(device_name)
   
   ns <- NS(id)
   
@@ -34,17 +30,18 @@ ui <- function(id, device) {
       card_header("Start"),
       fluidRow(
         column(6, 
-               tags$p(glue("This Shiny application was designed to visualize and process {company} {device_name} data.")),
-               tags$p(glue("The {company} {device_name} is a wearable wristband that can be used to record physiological signals such as heart rate, temperature, movement and skin conductance.")),
+               tags$p(glue("This Shiny application was designed to visualize and process {constants$device_config[[device]]$company} {device_name} data.")),
+               tags$p(glue("The {constants$device_config[[device]]$company} {device_name} is a wearable wristband that can be used to record physiological signals such as heart rate, temperature, movement and skin conductance.")),
                tags$p("The data will not be permanently stored on the server, no trackers or cookies are used.")
         ),
         
         column(6,
-               tags$img(src= glue("static/devices/{device}.png"), 
-                        height="150px", 
-                        width="150px", 
-                        align="left", href="https://www.empatica.com/research/e4/", target = "_blank")
-               
+               tags$a(href = constants$device_config[[device]]$website, target = "_blank",
+                      tags$img(src = glue("static/devices/{device}.png"), 
+                               height = "150px", 
+                               width = "150px", 
+                               align = "left")
+               )
         )
       ),
       fluidRow(style = "padding-top: 24px;",
