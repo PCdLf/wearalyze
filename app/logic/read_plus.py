@@ -6,6 +6,8 @@ import zipfile
 import pandas as pd
 from zipfile import ZipFile
 from fastavro import reader
+import rpy2.robjects as ro
+from rpy2.robjects import pandas2ri
 
 def get_timestamp_column(start_time,sampling_freq,len_list):
     start_time_ns = start_time * 1000
@@ -145,7 +147,7 @@ def get_avro_content(zip_file_path, avro_file_path_within_zip, extracted_folder)
     return avro_records
 
 def read_e4_plus(root, extracted_folder):
-    
+  
     avro_content=[]   
     zf = ZipFile(root)
     file_names = zf.namelist()
@@ -154,6 +156,11 @@ def read_e4_plus(root, extracted_folder):
     
     for file in avro_file_names:    
         avro_content+=get_avro_content(root, file, extracted_folder)
+        
+    pandas2ri.activate()
+        
+    # Convert pandas data frames to R data frames
+    avro_content = [{k: ro.conversion.py2rpy(v) for k, v in r.items()} for r in avro_content]
             
     return avro_content
 
