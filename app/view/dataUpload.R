@@ -9,14 +9,13 @@ box::use(
   shinytoastr[toastr_success, toastr_error],
   stats[runif],
   stringr[str_to_title],
-  wearables[aggregate_e4_data, rbind_e4, read_e4]
+  wearables[aggregate_e4_data, rbind_e4, read_e4, read_embrace_plus]
 )
 
 box::use(
   app/logic/constants,
   app/logic/functions,
-  app/view/components/helpButton,
-  app/logic/read_plus[read_plus]
+  app/view/components/helpButton
 )
 
 ui <- function(id, device) {
@@ -163,7 +162,7 @@ server <- function(id, device) {
                    out <- read_e4(fns[i])
                  },
                  `embrace-plus` = {
-                   out <- read_plus(fns[i])
+                   out <- read_embrace_plus(fns[i])
                  })
           
           if(is.null(out)){
