@@ -10,7 +10,8 @@ box::use(
   app/view/visualization,
   app/view/analysis,
   app/view/cutData,
-  app/view/batch
+  app/view/batch,
+  app/logic/functions
 )
 
 ui <- function(id, device){
@@ -18,7 +19,7 @@ ui <- function(id, device){
   ns <- NS(id)
   
   device_name <- device
-  device <- tolower(gsub(" ", "-", device))
+  device <- functions$get_device_id(device)
   
   nav_menu(
     title = device_name,
@@ -26,7 +27,8 @@ ui <- function(id, device){
     icon = icon("heart-circle-bolt"),
     nav_panel("Data",
               icon = icon("file-upload"),
-              dataUpload$ui(ns(paste0(device, "-data")))
+              dataUpload$ui(ns(paste0(device, "-data")), 
+                            device = device)
     ),
     nav_panel("Calendar",
               icon = icon("calendar-alt"),

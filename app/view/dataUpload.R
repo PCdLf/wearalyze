@@ -8,7 +8,8 @@ box::use(
   shinyjs[hidden, hide, show],
   shinytoastr[toastr_success, toastr_error],
   stats[runif],
-  wearables[aggregate_e4_data, rbind_e4, read_e4]
+  stringr[str_to_title],
+  wearables[aggregate_e4_data, rbind_e4, read_e4, read_embrace_plus]
 )
 
 box::use(
@@ -17,7 +18,10 @@ box::use(
   app/view/components/helpButton
 )
 
-ui <- function(id) {
+ui <- function(id, device) {
+  
+  device_name <- functions$get_device_name(device, title = TRUE)
+  
   ns <- NS(id)
   
   tagList(
@@ -26,17 +30,18 @@ ui <- function(id) {
       card_header("Start"),
       fluidRow(
         column(6, 
-               tags$p("This Shiny application was designed to visualize and process Empatica E4 data."),
-               tags$p("The Empatica E4 is a wearable wristband that can be used to record physiological signals such as heart rate, temperature, movement and skin conductance."),
+               tags$p(glue("This Shiny application was designed to visualize and process {constants$device_config[[device]]$company} {device_name} data.")),
+               tags$p(glue("The {constants$device_config[[device]]$company} {device_name} is a wearable wristband that can be used to record physiological signals such as heart rate, temperature, movement and skin conductance.")),
                tags$p("The data will not be permanently stored on the server, no trackers or cookies are used.")
         ),
         
         column(6,
-               tags$img(src= "static/devices/e4_hero_device-lg-hdpi.jpg", 
-                        height="150px", 
-                        width="150px", 
-                        align="left",href="https://www.empatica.com/research/e4/",target = "_blank")
-               
+               tags$a(href = constants$device_config[[device]]$website, target = "_blank",
+                      tags$img(src = glue("static/devices/{device}.png"), 
+                               height = "150px", 
+                               width = "150px", 
+                               align = "left")
+               )
         )
       ),
       fluidRow(style = "padding-top: 24px;",
@@ -60,7 +65,7 @@ ui <- function(id) {
       ),
       
       tags$div(id = ns("div_upload_file"),
-               tags$p("Click Browse to select E4 zip files to use in the application."),
+               tags$p(glue("Click Browse to select {device_name} zip files to use in the application.")),
                
                fileInput(ns("select_zip_files"),
                          label = "Choose ZIP file(s)", 
@@ -108,21 +113,25 @@ server <- function(id, device) {
     helpButton$server("help", helptext = constants$help_config$dataupload)
     
     # Functionality ---------------------------------
+    if (device != "e4") {
+      hide('btn_use_example_data_small')
+    } 
+    
     observe({
       rv$zip_files <- data.frame(
-        name = "1574839870_A00204.zip",
+        name = glue("{device}_large.zip"),
         size = NA,
         type = "application/x-zip-compressed",
-        datapath = "./app/static/example_data/1574839870_A00204.zip"
+        datapath = glue("./app/static/example_data/{device}_large.zip")
       )
     }) |> bindEvent(input$btn_use_example_data_large)
     
     observe({
       rv$zip_files <- data.frame(
-        name = "1635148245_A00204.zip",
+        name = glue("{device}_small.zip"),
         size = NA,
         type = "application/x-zip-compressed",
-        datapath = "./app/static/example_data/1635148245_A00204.zip"
+        datapath = glue("./app/static/example_data/{device}_small.zip")
       )
     }) |> bindEvent(input$btn_use_example_data_small)
     
@@ -148,7 +157,14 @@ server <- function(id, device) {
           
           incProgress(1/n, detail = fn_names[i])
           
-          out <- read_e4(fns[i])
+          switch(device,
+                 e4 = {
+                   out <- read_e4(fns[i])
+                 },
+                 `embrace-plus` = {
+                   out <- read_embrace_plus(fns[i])
+                 })
+          
           if(is.null(out)){
             
             toastr_error("One or more data files empty - check data!")

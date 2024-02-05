@@ -224,11 +224,11 @@ server <- function(id, data = reactive(NULL)) {
       disable("btn_do_cut")
       
       filter_createdir_zip(data = data()$data,
-                                      time_start = start_time(),
-                                      time_end = end_time(),
-                                      interval = input$num_interval_length, 
-                                      out_path = folder_out(),
-                                      fn_name = data()$fn_names[1]
+                           time_start = start_time(),
+                           time_end = end_time(),
+                           interval = input$num_interval_length, 
+                           out_path = folder_out(),
+                           fn_name = data()$fn_names[1]
       )
       
       toastr_success("ZIP file cut into pieces")
