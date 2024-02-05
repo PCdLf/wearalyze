@@ -198,9 +198,16 @@ server <- function(id, data = reactive(NULL)) {
       req(input$btn_select_folder_output)
       
       if(length(input$btn_select_folder_output) > 1){
-        chc <- paste0(ifelse(input$btn_select_folder_output$root == "home", "~", "."), 
-                      paste0(input$btn_select_folder_output$path, collapse = "/")
-        )
+        # if windows, use \, otherwise use /
+        if (.Platform$OS.type == "windows") {
+          chc <- paste0(ifelse(input$btn_select_folder_output$root == "home", "~", "."), 
+                        paste0(input$btn_select_folder_output$path, collapse = "\\")
+          )
+        } else {
+          chc <- paste0(ifelse(input$btn_select_folder_output$root == "home", "~", "."), 
+                        paste0(input$btn_select_folder_output$path, collapse = "/")
+          )
+        }
       } else {
         chc <- NA
       }
