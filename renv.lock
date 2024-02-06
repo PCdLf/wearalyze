@@ -2215,7 +2215,7 @@
       "RemoteRepo": "wearables",
       "RemoteUsername": "PCdLf",
       "RemoteRef": "HEAD",
-      "RemoteSha": "fffc1ce835fa798e4757b1b6777853d6a32c49b2",
+      "RemoteSha": "848dc83d9ef0d62ca61ca9fb37868791c2750ba4",
       "Requirements": [
         "R",
         "R.utils",
@@ -2235,7 +2235,7 @@
         "waveslim",
         "xts"
       ],
-      "Hash": "b0e9395a4254d1feabd37297e7eeba64"
+      "Hash": "3433ab4d876d1938a1d3b827213244d6"
     },
     "webshot": {
       "Package": "webshot",
