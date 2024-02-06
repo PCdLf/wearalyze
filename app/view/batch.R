@@ -90,7 +90,7 @@ server <- function(id) {
     folder_out <- reactiveVal()
     
     zip_files <- reactive({
-      if(isTRUE(folder_in())){
+      if(length(folder_in()) > 0){
         list.files(folder_in(), pattern = "[.]zip$", recursive = TRUE, full.names = TRUE)
       }
     })
