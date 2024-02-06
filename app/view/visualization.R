@@ -1,7 +1,8 @@
 
 box::use(
   bslib[navset_tab, nav_panel, nav_select, card, card_header],
-  DT[DTOutput, renderDT],
+  DT[datatable, DTOutput, renderDT],
+  dplyr[filter, mutate],
   dygraphs[dygraphOutput, renderDygraph],
   lubridate[ymd_hms],
   shiny[actionButton, bindEvent, br, checkboxInput, column, fluidRow, hr, 
@@ -193,7 +194,7 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL), device)
       
       functions$show_tab("plottab")
       
-      if(isTRUE(nrow(calendar()))){
+      if(nrow(calendar()) > 0){
         functions$show_tab("plotannotations")
       }
       
