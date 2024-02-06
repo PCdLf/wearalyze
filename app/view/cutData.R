@@ -132,7 +132,7 @@ server <- function(id, data = reactive(NULL)) {
     # Functionality ---------------------------------
     shinyDirChoose(input, 
                    "btn_select_folder_output",
-                   roots = c(home = "~", 
+                   roots = c(home = ifelse(.Platform$OS.type == "windows", "C:", "~"), 
                              wd = "."))
     
     observe({
@@ -200,11 +200,11 @@ server <- function(id, data = reactive(NULL)) {
       if(length(input$btn_select_folder_output) > 1){
         # if windows, use \, otherwise use /
         if (.Platform$OS.type == "windows") {
-          chc <- paste0(ifelse(input$btn_select_folder_output$root == "home", "~", "."), 
+          chc <- paste0(ifelse(input$btn_select_folder_output$root == "home", ifelse(.Platform$OS.type == "windows", "C:", "~"), "."), 
                         paste0(input$btn_select_folder_output$path, collapse = "\\")
           )
         } else {
-          chc <- paste0(ifelse(input$btn_select_folder_output$root == "home", "~", "."), 
+          chc <- paste0(ifelse(input$btn_select_folder_output$root == "home", ifelse(.Platform$OS.type == "windows", "C:", "~"), "."), 
                         paste0(input$btn_select_folder_output$path, collapse = "/")
           )
         }
