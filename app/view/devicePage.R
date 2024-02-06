@@ -61,13 +61,14 @@ server <- function(id, device) {
     
     # Modules ---------------------------------------
     data_in <- dataUpload$server(id = paste0(device, "-data"), 
-                                    device = device)
+                                 device = device)
     
     calendar <- calendar$server(id = paste0(device, "-calendar"))
     
     visualization <- visualization$server(id = paste0(device, "-visualization"),
-                                             data = data_in,
-                                             device = device)
+                                          data = data_in,
+                                          device = device,
+                                          calendar = calendar)
     
     analysis$server(id = paste0(device, "-analysis"),
                     data = data_in,
