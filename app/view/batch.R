@@ -118,7 +118,7 @@ server <- function(id) {
     
     observe({
       
-      req(input$btn_select_folder_input)
+      req(input$btn_select_folder_output)
       
       # if windows, use \, otherwise use /
       if (.Platform$OS.type == "windows") {
