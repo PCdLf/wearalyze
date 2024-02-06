@@ -42,7 +42,7 @@ ui <- function(id) {
                               title = "Select input folder",
                               icon = icon("folder-open"), 
                               class = "btn-light"),
-
+               
                uiOutput(ns("ui_folder_in")),
                
                tags$br(),
@@ -120,15 +120,19 @@ server <- function(id) {
       
       req(input$btn_select_folder_input)
       
-      # if windows, use \, otherwise use /
-      if (.Platform$OS.type == "windows") {
-        chc <- paste0(ifelse(input$btn_select_folder_input$root == "home", "C:", "."), 
-                      paste0(input$btn_select_folder_input$path, collapse = "\\")
-        )
+      if(length(input$btn_select_folder_input) > 1){
+        # if windows, use \, otherwise use /
+        if (.Platform$OS.type == "windows") {
+          chc <- paste0(ifelse(input$btn_select_folder_input$root == "home", "C:", "."), 
+                        paste0(input$btn_select_folder_input$path, collapse = "\\")
+          )
+        } else {
+          chc <- paste0(ifelse(input$btn_select_folder_input$root == "home", "~", "."), 
+                        paste0(input$btn_select_folder_input$path, collapse = "/")
+          )
+        }
       } else {
-        chc <- paste0(ifelse(input$btn_select_folder_input$root == "home", "~", "."), 
-                      paste0(input$btn_select_folder_input$path, collapse = "/")
-        )
+        chc <- NA
       }
       
       if(!is.na(chc)){
