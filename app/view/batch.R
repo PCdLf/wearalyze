@@ -129,8 +129,6 @@ server <- function(id) {
         chc <- paste0(ifelse(input$btn_select_folder_input$root == "home", "~", "."), 
                       paste0(input$btn_select_folder_input$path, collapse = "/")
         )
-      } else {
-        chc <- NA
       }
       
       if(!is.na(chc)){
