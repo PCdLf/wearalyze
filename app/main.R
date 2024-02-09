@@ -35,6 +35,8 @@ server <- function(id) {
   moduleServer(id, function(input, output, session) {
     
     # Init ------------------------------------------
+    options(shiny.maxRequestSize = 100*1024^2)
+    
     for (device in c("e4", "embrace-plus", "nowatch")) {
       functions$disable_link(menu = device, name = "Calendar")
       functions$disable_link(menu = device, name = "Visualization")
