@@ -9,7 +9,9 @@ box::use(
   shinytoastr[toastr_success, toastr_error],
   stats[runif],
   stringr[str_to_title],
-  wearables[aggregate_e4_data, rbind_e4, read_e4, read_embrace_plus]
+  wearables[aggregate_e4_data, aggregate_embrace_plus_data,
+            rbind_e4, rbind_embrace_plus,
+            read_e4, read_embrace_plus]
 )
 
 box::use(
@@ -180,14 +182,21 @@ server <- function(id, device) {
           
           # If more than 1 zip file selected, row-bind them using our custom function
           incProgress(1/n, detail = "Row-binding")
-          if(length(fns) > 1){
-            rv$data <- rbind_e4(data)
-          } else {
-            rv$data <- data[[1]]
-          }
           
-          # Calculate aggregated version of the data for much quicker plotting
-          rv$data_agg <- aggregate_e4_data(rv$data)
+          switch(device,
+                 e4 = {
+                   rv$data <- rbind_e4(data)
+                   rv$data_agg <- aggregate_e4_data(rv$data)
+                 },
+                 `embrace-plus` = {
+                   rv$data <- rbind_embrace_plus(data)
+                   rv$data_agg <- aggregate_embrace_plus_data(rv$data)
+                 },
+                 #TODO: Add nowatch
+                 nowatch = {
+                   rv$data <- rbind_nowatch(data)
+                   rv$data_agg <- aggregate_nowatch_data(rv$data)
+                 })
           
           rv$newdata <- runif(1)
           
