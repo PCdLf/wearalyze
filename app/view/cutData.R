@@ -141,7 +141,8 @@ server <- function(id, data = reactive(NULL)) {
       
       req(nrow(data$EDA) > 0)
       
-      tms <- range(data$EDA$DateTime)
+      tms <- range(data$EDA[[functions$get_datetime_column(data)]])
+      
       updateDateInput(session, "date_analysis_start",
                       value = min(as.Date(tms)),
                       min = min(as.Date(tms)),

@@ -72,13 +72,7 @@ analysis_summary_table <- function(a){
 
 e4_data_datetime_range <- function(data){
   
-  if (is.null(data$EDA$DateTime)) {
-    date_time <- data$EDA$timestamp
-  } else {
-    date_time <- data$EDA$DateTime
-  }
-  
-  r <- range(date_time)
+  r <- range(data$EDA[[get_datetime_column(data)]])
   as.numeric(difftime(r[2],r[1], units = "hours"))
   
 }
@@ -137,5 +131,15 @@ get_device_id <- function(device) {
   
   device <- tolower(gsub(" ", "-", device))
   return(device)
+  
+}
+
+get_datetime_column <- function(data){
+  
+  if ("DateTime" %in% names(data)){
+    return("DateTime")
+  } else {
+    return("timestamp")
+  }
   
 }
