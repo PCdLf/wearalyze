@@ -15,11 +15,17 @@ box::use(
 # this timeseries is used in e4_timeseries_plot
 make_e4_timeseries <- function(data){
   
+  if ("HR" %in% names(data)){
+    HR_timeseries <- as_timeseries(data$HR, name_col = "HR")
+  } else {
+    HR_timeseries <- as_timeseries(data.frame(DateTime = data$EDA$DateTime, HR = NA), name_col = "HR")
+  }
+  
   list(
     EDA = as_timeseries(data$EDA, name_col = "EDA"),
-    HR = as_timeseries(data$HR, name_col = "HR"),
+    HR = HR_timeseries,
     TEMP = as_timeseries(data$TEMP, name_col = "Temperature"),
-    MOVE = as_timeseries(data$ACC, index = 5, name_col = "Movement")
+    MOVE = as_timeseries(data$ACC, index = which(names(data$ACC) == "a"), name_col = "Movement")
   )
   
 }

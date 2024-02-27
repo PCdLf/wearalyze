@@ -6,11 +6,11 @@ box::use(
   dygraphs[dygraphOutput, renderDygraph],
   lubridate[ymd_hms],
   shiny[actionButton, bindEvent, br, checkboxInput, column, fluidRow, hr, 
-        icon, moduleServer, NS, observe, radioButtons,
+        icon, isTruthy, moduleServer, NS, observe, radioButtons,
         reactive, reactiveVal, renderUI, req, tagList, tags, textInput, uiOutput,
         updateActionButton],
   shinycssloaders[withSpinner],
-  shinyjs[show],
+  shinyjs[hide, show],
   shinytoastr[toastr_info, toastr_success]
 )
 
@@ -57,21 +57,24 @@ ui <- function(id) {
                  
           ),
           column(7,
-                 tags$h4("EDA"),
-                 visSeriesOptions$ui(ns("eda"), y_range = constants$app_config$visualisation$eda$yrange),
-                 tags$hr(),
+                 tags$div(id = ns("eda_options"),
+                          tags$h4("EDA"),
+                          visSeriesOptions$ui(ns("eda"), y_range = constants$app_config$visualisation$eda$yrange),
+                          tags$hr()),
                  
-                 tags$h4("HR"),
-                 visSeriesOptions$ui(ns("hr"), y_range =constants$app_config$visualisation$hr$yrange),
-                 tags$hr(),
+                 tags$div(id = ns("hr_options"),
+                          tags$h4("HR"),
+                          visSeriesOptions$ui(ns("hr"), y_range =constants$app_config$visualisation$hr$yrange),
+                          tags$hr()),
                  
-                 tags$h4("TEMP"),
-                 visSeriesOptions$ui(ns("temp"), y_range = constants$app_config$visualisation$temp$yrange),
-                 tags$hr(),
+                 tags$div(id = ns("temp_options"),
+                          tags$h4("TEMP"),
+                          visSeriesOptions$ui(ns("temp"), y_range = constants$app_config$visualisation$temp$yrange),
+                          tags$hr()),
                  
-                 tags$h4("MOVE"),
-                 visSeriesOptions$ui(ns("move"), y_range = constants$app_config$visualisation$move$yrange)
-                 
+                 tags$div(id = ns("move_options"),
+                          tags$h4("MOVE"),
+                          visSeriesOptions$ui(ns("move"), y_range = constants$app_config$visualisation$move$yrange))
           )
         )
         
@@ -117,6 +120,17 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL), device)
     y_move <- visSeriesOptions$server("move", selected = "custom", custom_y = constants$app_config$visualisation$move$custom_y)
     
     # Functionality ---------------------------------
+    observe({
+      req(data()$data)
+      
+      if (!"HR" %in% names(data()$data)) {
+        hide("hr_options")
+      }
+      
+      if (!"ACC" %in% names(data()$data)) {
+        hide("move_options")
+      }
+    })
     
     functions$hide_tab("plottab")
     functions$hide_tab("plotannotations")
@@ -186,7 +200,7 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL), device)
         agg <- input$rad_plot_agg
       }
       
-      if(agg == "Yes"){
+      if (agg == "Yes") {
         timeseries <- functions_e4$make_e4_timeseries(data$data_agg)
       } else {
         timeseries <- functions_e4$make_e4_timeseries(data$data)
@@ -194,7 +208,7 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL), device)
       
       functions$show_tab("plottab")
       
-      if(nrow(calendar()) > 0){
+      if (isTruthy(calendar())) {
         functions$show_tab("plotannotations")
       }
       
