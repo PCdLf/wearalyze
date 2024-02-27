@@ -78,10 +78,10 @@ server <- function(id) {
     observe({
       calendar_file(
         data.frame(
-          name = "Calendar_new format_Saskia.xlsx",
+          name = "e4_calendar_large.xlsx",
           size = NA,
           type = NA,
-          datapath = "./app/static/example_data/Calendar_new format_Saskia.xlsx"
+          datapath = "./app/static/example_data/e4_calendar_large.xlsx"
         )
       )
     }) |> bindEvent(input$btn_use_example_data_large)
@@ -89,10 +89,10 @@ server <- function(id) {
     observe({
       calendar_file(
         data.frame(
-          name = "Calendar_Peter.xlsx",
+          name = "e4_calendar_small.xlsx",
           size = NA,
           type = NA,
-          datapath = "./app/static/example_data/Calendar_Peter.xlsx"
+          datapath = "./app/static/example_data/e4_calendar_small.xlsx"
         )
       )
     }) |> bindEvent(input$btn_use_example_data_small)
