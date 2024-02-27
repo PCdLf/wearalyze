@@ -115,9 +115,33 @@ server <- function(id, device) {
     helpButton$server("help", helptext = constants$help_config$dataupload)
     
     # Functionality ---------------------------------
-    if (device != "e4") {
-      hide('btn_use_example_data_small')
-    } 
+    # check if _small or _large files are available for device
+    switch(device,
+           e4 = {
+             if(!file.exists("./app/static/example_data/e4_large.zip")){
+               hide("btn_use_example_data_large")
+             }
+             if(!file.exists("./app/static/example_data/e4_small.zip")){
+               hide("btn_use_example_data_small")
+             }
+           },
+           `embrace-plus` = {
+             if(!file.exists("./app/static/example_data/embrace-plus_large.zip")){
+               hide("btn_use_example_data_large")
+             }
+             if(!file.exists("./app/static/example_data/embrace-plus_small.zip")){
+               hide("btn_use_example_data_small")
+             }
+           },
+           nowatch = {
+             if(!file.exists("./app/static/example_data/nowatch_large.zip")){
+               hide("btn_use_example_data_large")
+             }
+             if(!file.exists("./app/static/example_data/nowatch_small.zip")){
+               hide("btn_use_example_data_small")
+             }
+           }
+    )
     
     observe({
       rv$zip_files <- data.frame(
