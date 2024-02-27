@@ -213,7 +213,7 @@ server <- function(id, device) {
                    rv$data_agg <- aggregate_e4_data(rv$data)
                  },
                  `embrace-plus` = {
-                   rv$data <- rbind_embrace_plus(data)
+                   rv$data <- rbind_embrace_plus(data[[1]])
                    rv$data_agg <- aggregate_embrace_plus_data(rv$data)
                  },
                  #TODO: Add nowatch
