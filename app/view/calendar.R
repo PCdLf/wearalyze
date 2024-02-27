@@ -3,6 +3,7 @@ box::use(
   bslib[card, card_header],
   dplyr[mutate],
   DT[datatable, dataTableOutput, renderDataTable],
+  glue[glue],
   shiny[actionButton, bindEvent, br, div, fileInput,  h4, icon, moduleServer,
         NS, observe, p, reactiveVal, req, tagList],
   shinycssloaders[withSpinner],
@@ -67,7 +68,7 @@ ui <- function(id){
 
 
 
-server <- function(id) {
+server <- function(id, device) {
   moduleServer(id, function(input, output, session) {
     
     calendar_out <- reactiveVal()
@@ -75,13 +76,41 @@ server <- function(id) {
     
     helpButton$server("help", helptext = constants$help_config$calendar)
     
+    # check if _small or _large files are available for device
+    switch(device,
+           e4 = {
+             if(!file.exists("./app/static/example_data/e4_calendar_large.xlsx")){
+               hide("btn_use_example_data_large")
+             }
+             if(!file.exists("./app/static/example_data/e4_calendar_small.xlsx")){
+               hide("btn_use_example_data_small")
+             }
+           },
+           `embrace-plus` = {
+             if(!file.exists("./app/static/example_data/embrace-plus_calendar_large.xlsx")){
+               hide("btn_use_example_data_large")
+             }
+             if(!file.exists("./app/static/example_data/embrace-plus_calendar_small.xlsx")){
+               hide("btn_use_example_data_small")
+             }
+           },
+           nowatch = {
+             if(!file.exists("./app/static/example_data/nowatch_calendar_large.xlsx")){
+               hide("btn_use_example_data_large")
+             }
+             if(!file.exists("./app/static/example_data/nowatch_calendar_small.xlsx")){
+               hide("btn_use_example_data_small")
+             }
+           }
+    )
+    
     observe({
       calendar_file(
         data.frame(
-          name = "e4_calendar_large.xlsx",
+          name = glue("{device}_calendar_large.xlsx"),
           size = NA,
           type = NA,
-          datapath = "./app/static/example_data/e4_calendar_large.xlsx"
+          datapath = glue("./app/static/example_data/{device}_calendar_large.xlsx")
         )
       )
     }) |> bindEvent(input$btn_use_example_data_large)
@@ -89,10 +118,10 @@ server <- function(id) {
     observe({
       calendar_file(
         data.frame(
-          name = "e4_calendar_small.xlsx",
+          name = glue("{device}_calendar_small.xlsx"),
           size = NA,
           type = NA,
-          datapath = "./app/static/example_data/e4_calendar_small.xlsx"
+          datapath = glue("./app/static/example_data/{device}_calendar_small.xlsx")
         )
       )
     }) |> bindEvent(input$btn_use_example_data_small)

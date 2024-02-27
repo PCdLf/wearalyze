@@ -63,7 +63,8 @@ server <- function(id, device) {
     data_in <- dataUpload$server(id = paste0(device, "-data"), 
                                  device = device)
     
-    calendar <- calendar$server(id = paste0(device, "-calendar"))
+    calendar <- calendar$server(id = paste0(device, "-calendar"),
+                                device = device)
     
     visualization <- visualization$server(id = paste0(device, "-visualization"),
                                           data = data_in,
