@@ -8,7 +8,7 @@ box::use(
   shinyFiles[shinyDirButton, shinyDirChoose],
   shinyjs[disable, enable, hidden, hide, show],
   shinytoastr[toastr_info, toastr_success],
-  wearables[read_and_process_e4]
+  wearables[read_and_process_e4, read_and_process_embrace_plus]
 )
 
 box::use(
@@ -82,7 +82,7 @@ ui <- function(id) {
   
 }
 
-server <- function(id) {
+server <- function(id, device) {
   moduleServer(id, function(input, output, session) {
     
     # Reactive values -------------------------------
@@ -227,8 +227,19 @@ server <- function(id) {
         
         for(i in seq_along(zips)){
           
-          out <- read_and_process_e4(zips[i])
-          
+          switch(device,
+                 e4 = {
+                   out <- read_and_process_e4(zips[i])
+                 },
+                 `embrace-plus` = {
+                   out <- read_and_process_embrace_plus(zips[i])
+                 },
+                 # TODO: nowatch
+                 nowatch = {
+                   out <- read_and_process_nowatch(zips[i])
+                 }
+          )
+
           if(is.null(out)){
             toastr_info(paste("Problem with",zips[i],"- skipping."))
             next
