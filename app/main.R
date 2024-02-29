@@ -1,7 +1,8 @@
 box::use(
   bslib[card, layout_columns, nav_panel, nav_panel_hidden, nav_menu, page_navbar],
+  sever[reload_button, sever, useSever],
   shiny[bootstrapPage, div, moduleServer, NS, renderUI, tags, uiOutput, icon, tagList, br,
-        reactiveValues, p],
+        reactiveValues, p, img, h1],
   shinyjs[useShinyjs],
   shinytoastr[useToastr]
 )
@@ -19,6 +20,7 @@ ui <- function(id) {
     header = tagList(
       useShinyjs(),
       useToastr(),
+      useSever()
     ),
     id = ns("navbar_id"),
     title = "Wearalyze",
@@ -33,6 +35,23 @@ ui <- function(id) {
 #' @export
 server <- function(id) {
   moduleServer(id, function(input, output, session) {
+    
+    # Error catching --------------------------------
+    disconnected <- tagList(
+      h1("Oops, something broke!",
+         style = "color: black;"),
+      p("Please try to reconnect."),
+      div(
+        img(src = "static/devices/broken_device.png", 
+            width = "300px",
+            style = "margin-left: -40px;")
+      ),
+      div(
+        reload_button("Reconnect", class = "warning")
+      )
+    )
+    
+    sever(html = disconnected, bg_color = "#f2f2f2", color = "black")
     
     # Init ------------------------------------------
     options(shiny.maxRequestSize = 100*1024^2)
