@@ -60,9 +60,9 @@ analysis_summary_table <- function(a){
           "Mean acceleration", mean(a$data$ACC$a, na.rm=TRUE),
           "Mean temperature", mean(a$data$TEMP$TEMP, na.rm=TRUE),
           "Mean HR", mean(a$data$HR$HR, na.rm=TRUE),
-          "Nr. accepted beats", a$ibi$summary$beats$beats_accepted,
-          "Nr. original beats", a$ibi$summary$beats$beats_original,
-          "rMSSD", a$ibi$time_analysis$rMSSD,
+          "Nr. accepted beats", ifelse(!is.null(a$ibi), a$ibi$summary$beats$beats_accepted, NA),
+          "Nr. original beats", ifelse(!is.null(a$ibi), a$ibi$summary$beats$beats_original, NA),
+          "rMSSD", ifelse(!is.null(a$ibi), a$ibi$time_analysis$rMSSD, NA),
           "Mean EDA (cleaned)", mean(a$data_summary$EDA$EDA_clean_mean, na.rm = TRUE),
           "Number of peaks per minute (cleaned)", a$data_summary$peaks$peaks_clean_per_min,
           "Mean area under the curve (AUC) (cleaned)", a$data_summary$peaks$peaks_clean_mean_auc,
@@ -139,7 +139,7 @@ get_datetime_column <- function(data){
   if ("DateTime" %in% names(data)){
     return("DateTime")
   } else {
-    return("timestamp")
+    stop("DateTime column not found in data. Please make sure it's there!")
   }
   
 }

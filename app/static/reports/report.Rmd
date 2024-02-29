@@ -7,16 +7,12 @@ output: html_document
 library(dygraphs)
 library(xts)
 library(dplyr)
-
 library(knitr)
 library(kableExtra)
 knitr::opts_chunk$set(echo = FALSE)
 ```
 
-
-
 # Timeseries plot
-
 
 ```{r}
 
@@ -27,25 +23,33 @@ plots[[2]]
 plots[[3]] 
 
 plots[[4]] |> 
-  dyRangeSelector(dateWindow = c(range(analysis$data$EDA$DateTime)[1],
-                                 range(analysis$data$EDA$DateTime)[2]))
+  dyRangeSelector(dateWindow =
+                    c(range(
+                      analysis$data$EDA[[functions$get_datetime_column(analysis$data$EDA)]]
+                      )[1],
+                      range(
+                        analysis$data$EDA[[functions$get_datetime_column(analysis$data$EDA)]]
+                      )[2])
+                  )
 
 
 ```
 
-# IBI Data quality
-
 ```{r}
-
 data <- analysis$data
 
-ibi_data <- xts(data$IBI$IBI, order.by = data$IBI$DateTime)
+if (!is.null(data$IBI)) {
+  
+  knitr::asis_output("# IBI Data quality\\n")
 
-dygraph(ibi_data, height = 200, width = 900, ylab = "Available ibi's") |>
-  dyOptions(colors = "#f94144", drawPoints = TRUE,
-            pointSize = 2) |>
-  dyAxis(name = 'x', valueRange = c(data$EDA$DateTime[1],
-                                    tail(data$EDA$DateTime, n=1)))
+  ibi_data <- xts(data$IBI$IBI, order.by = data$IBI$DateTime)
+
+  dygraph(ibi_data, height = 200, width = 900, ylab = "Available ibi's") |>
+    dyOptions(colors = "#f94144", drawPoints = TRUE,
+              pointSize = 2) |>
+    dyAxis(name = 'x', valueRange = c(data$EDA[[functions$get_datetime_column(data$EDA)]][1],
+                                      tail(data$EDA[[functions$get_datetime_column(data$EDA)]], n=1)))
+}
 
 ```
 
@@ -57,7 +61,7 @@ eda_bin_plot_data <- thicken(analysis$eda_bin, interval = "1 min", colname = "da
   group_by(datetime_1min) |>
   summarize(frac_bad_data = mean(label == -1))
 
-x_data <- xts(select(eda_bin_plot_data, datetime_1min, frac_bad_data ), order.by = eda_bin_plot_data[[1]])
+x_data <- xts(select(eda_bin_plot_data, datetime_1min, frac_bad_data), order.by = eda_bin_plot_data[[1]])
 
 dygraph(x_data, height = 200, width = 900, ylab = "Fraction bad data") |>
   dyOptions(colors = "#f94144")
@@ -76,9 +80,9 @@ kable(calendar, format = "html") |>
 
 # Analysis output
 
-
 ## IBI Time analysis
-```{r eval=TRUE}
+
+```{r eval=TRUE warning=FALSE}
 
 functions$analysis_summary_table(analysis) |>
   kable(format = "html", digits = 2) |>
