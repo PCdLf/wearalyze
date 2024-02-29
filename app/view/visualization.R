@@ -11,13 +11,14 @@ box::use(
         updateActionButton],
   shinycssloaders[withSpinner],
   shinyjs[hide, show],
-  shinytoastr[toastr_info, toastr_success]
+  shinytoastr[toastr_info, toastr_success],
+  tictoc[tic, toc]
 )
 
 box::use(
   app/logic/constants,
   app/logic/functions,
-  app/logic/functions_e4,
+  app/logic/functions_devices,
   app/view/components/helpButton,
   app/view/components/visSeriesOptions
 )
@@ -193,6 +194,8 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL), device)
       
       toastr_info("Plot construction started...")
       
+      tic()
+      
       # Precalc. timeseries (for viz.)
       if(is.null(input$rad_plot_agg)){
         agg <- "Yes"
@@ -201,9 +204,9 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL), device)
       }
       
       if (agg == "Yes") {
-        timeseries <- functions_e4$make_timeseries(data$data_agg)
+        timeseries <- functions_devices$make_timeseries(data$data_agg)
       } else {
-        timeseries <- functions_e4$make_timeseries(data$data)
+        timeseries <- functions_devices$make_timeseries(data$data)
       }
       
       functions$show_tab("plottab")
@@ -221,12 +224,12 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL), device)
         annotatedata <- NULL
       }
       
-      plots <- functions_e4$e4_timeseries_plot(timeseries,
-                                               main_title = input$txt_plot_main_title,
-                                               calendar_data = annotatedata,
-                                               plot_tags = isTRUE(input$rad_plot_tags == "Yes"),
-                                               tags = data$data$tags,
-                                               series_options = series_options()
+      plots <- functions_devices$timeseries_plot(timeseries,
+                                                 main_title = input$txt_plot_main_title,
+                                                 calendar_data = annotatedata,
+                                                 plot_tags = isTRUE(input$rad_plot_tags == "Yes"),
+                                                 tags = data$data$tags,
+                                                 series_options = series_options()
       )
       
       plot_output(
@@ -238,8 +241,8 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL), device)
       output$dygraph_current_data3 <- renderDygraph(plots[[3]])
       output$dygraph_current_data4 <- renderDygraph(plots[[4]])
       
+      toc()
       
-      # 
       toastr_success("Plot constructed, click on the 'Plot' tab!")
       updateActionButton(session, "btn_make_plot", label = "Update plot", icon = icon("sync"))
       functions$enable_link(menu = device,
@@ -258,8 +261,8 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL), device)
       
       calendar() |> 
         filter(
-          !((Start > ran[[2]] && End > ran[[2]]) |
-              (Start < ran[[1]] && End < ran[[1]]))
+          (Start <= ran[[2]] & End <= ran[[2]]) &
+            (Start >= ran[[1]] & End >= ran[[1]])
         )
       
     })
