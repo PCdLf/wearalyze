@@ -148,7 +148,7 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL), device)
     # Option to plot aggregated data (or not),
     # only visible if less than 2 hours of data, otherwise the plot will not be responsive.
     data_range_hours <- reactive({
-      functions$e4_data_datetime_range(data()$data)
+      functions$data_datetime_range(data()$data)
     })
     
     output$ui_plot_agg_data <- renderUI({

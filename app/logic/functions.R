@@ -70,7 +70,7 @@ analysis_summary_table <- function(a){
   )
 }
 
-e4_data_datetime_range <- function(data){
+data_datetime_range <- function(data){
   
   r <- range(data$EDA[[get_datetime_column(data$EDA)]])
   as.numeric(difftime(r[2],r[1], units = "hours"))
