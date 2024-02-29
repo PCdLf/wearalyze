@@ -13,7 +13,7 @@ box::use(
 
 # Utility function to make 4 timeseries based on a dataset
 # this timeseries is used in e4_timeseries_plot
-make_e4_timeseries <- function(data){
+make_timeseries <- function(data){
   
   if ("HR" %in% names(data)){
     HR_timeseries <- as_timeseries(data$HR, name_col = "HR")

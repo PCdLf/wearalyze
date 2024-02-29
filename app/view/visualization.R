@@ -201,9 +201,9 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL), device)
       }
       
       if (agg == "Yes") {
-        timeseries <- functions_e4$make_e4_timeseries(data$data_agg)
+        timeseries <- functions_e4$make_timeseries(data$data_agg)
       } else {
-        timeseries <- functions_e4$make_e4_timeseries(data$data)
+        timeseries <- functions_e4$make_timeseries(data$data)
       }
       
       functions$show_tab("plottab")
