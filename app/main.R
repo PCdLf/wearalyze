@@ -38,13 +38,12 @@ server <- function(id) {
     
     # Error catching --------------------------------
     disconnected <- tagList(
-      h1("Oops, something broke!",
+      h1("Oops, lost connection!",
          style = "color: black;"),
       p("Please try to reconnect."),
       div(
-        img(src = "static/devices/broken_device.png", 
-            width = "300px",
-            style = "margin-left: -40px;")
+        img(src = "static/logos/wearalyze_oops.png", 
+            width = "300px")
       ),
       div(
         reload_button("Reconnect", class = "warning")

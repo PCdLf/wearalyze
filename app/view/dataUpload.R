@@ -31,13 +31,13 @@ ui <- function(id, device) {
     card(
       card_header("Start"),
       fluidRow(
-        column(6, 
+        column(8, 
                tags$p(glue("This Shiny application was designed to visualize and process {constants$device_config[[device]]$company} {device_name} data.")),
                tags$p(glue("The {constants$device_config[[device]]$company} {device_name} is a wearable wristband that can be used to record physiological signals such as heart rate, temperature, movement and skin conductance.")),
                tags$p("The data will not be permanently stored on the server, no trackers or cookies are used.")
         ),
         
-        column(6,
+        column(4,
                tags$a(href = constants$device_config[[device]]$website, target = "_blank",
                       tags$img(src = glue("static/devices/{device}.png"), 
                                height = "150px", 
@@ -48,20 +48,20 @@ ui <- function(id, device) {
       ),
       fluidRow(style = "padding-top: 24px;",
                
-               column(3, functions$logo_image_with_link("static/logos/logo_deborg.svg", "https://www.deborg.nl/", width = "100%")),
-               column(3, functions$logo_image_with_link("static/logos/mit_media_lab.png", "https://www.media.mit.edu/groups/affective-computing/overview/", width = "100%")),
-               column(3, functions$logo_image_with_link("static/logos/u_twente.png","https://www.utwente.nl/nl/bms/pgt/", width = "100%"))
+               column(4, functions$logo_image_with_link("static/logos/logo_deborg.svg", "https://www.deborg.nl/", width = "100%")),
+               column(4, functions$logo_image_with_link("static/logos/mit_media_lab.png", "https://www.media.mit.edu/groups/affective-computing/overview/", width = "100%")),
+               column(4, functions$logo_image_with_link("static/logos/u_twente.png","https://www.utwente.nl/nl/bms/pgt/", width = "100%"))
       ),
       fluidRow(
-        column(3, functions$logo_image_with_link("static/logos/umcu.png", "https://www.umcutrecht.nl/nl/innovatie-in-de-psychiatrie", width = "100%")),
-        column(3, functions$logo_image_with_link("static/logos/radboud.png","https://www.ru.nl/bsi/", width = "100%"))
+        column(4, functions$logo_image_with_link("static/logos/umcu.png", "https://www.umcutrecht.nl/nl/innovatie-in-de-psychiatrie", width = "100%")),
+        column(4, functions$logo_image_with_link("static/logos/radboud.png","https://www.ru.nl/bsi/", width = "100%"))
         
       )
     ),
     card(
       card_header("Data input"),
       tags$div(style = "width: 100%;",
-               tags$div(style = "float: right;",
+               tags$div(style = "position: absolute; right: 10px",
                         helpButton$ui(ns("help"))
                )
       ),
