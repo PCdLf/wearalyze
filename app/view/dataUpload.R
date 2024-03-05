@@ -112,7 +112,7 @@ server <- function(id, device) {
     )
     
     # Modules --------------------------------------
-    helpButton$server("help", helptext = constants$help_config$dataupload)
+    helpButton$server("help", helptext = constants$help_config$dataupload[[device]])
     
     # Functionality ---------------------------------
     # check if _small or _large files are available for device

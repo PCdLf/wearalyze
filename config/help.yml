@@ -1,38 +1,59 @@
-dataupload: >
-  Select a ZIP file here, recorded by the <strong>Empatica E4</strong><br>
-  <br>
-  Data must be in the standard format provided by Empatica.<br>
-  A zip-file downloaded from Empatica contains several csv files that contain information on the physiological data that is recorded with the Empatica E4 
-  <br?
-  .csv files in this archive are in the following format:<br>
-  The first row is the initial time of the session expressed as unix timestamp in UTC.<br>
-  The second row is the sample rate expressed in Hz.<br>
-  <br>
-  <strong>TEMP.csv:</strong> Data from temperature sensor expressed degrees on the Celsius (°C) scale.<br>
-  <br>
-  <strong>EDA.csv:</strong> Data from the electrodermal activity sensor expressed as microsiemens (μS).<br>
-  <br>
-  <strong>BVP.csv:</strong> Data from photoplethysmograph.<br>
-  <br>
-  <strong>ACC.csv:</strong> Data from 3-axis accelerometer sensor.<br>
-  The accelerometer is configured to measure acceleration in the range [-2g, 2g].<br>
-  Therefore the unit in this file is 1/64g.<br>
-  Data from x, y, and z axis are respectively in first, second, and third column.<br>
-  <br>
-  <strong>IBI.csv:</strong> Time between individuals heart beats extracted from the BVP signal.<br>
-  No sample rate is needed for this file.<br>
-  The first column is the time (respect to the initial time) of the detected inter-beat<br>
-  interval expressed in seconds (s).
-  The second column is the duration in seconds (s) of the detected inter-beat interval<br>
-  (i.e., the distance in seconds from the previous beat).<br>
-  <br>
-  <strong>HR.csv:</strong> Average heart rate extracted from the BVP signal.
-  <br>
-  The first row is the initial time of the session expressed as unix timestamp in UTC. The second row is the sample rate expressed in Hz.<br>
-  <br>
-  <strong>tags.csv:</strong> Event mark times.<br>
-  Each row corresponds to a physical button press on the device; the same time as the status LED is first illuminated. The time is expressed as a unix timestamp in UTC and it is synchronized with initial time of the session indicated in the related data files from the corresponding session.
-  
+dataupload:
+  e4: >
+    Select a ZIP file here, recorded by the <strong>Empatica E4</strong><br>
+    <br>
+    Data must be in the standard format provided by Empatica.<br>
+    A zip-file downloaded from Empatica contains several csv files that contain information on the physiological data that is recorded with the Empatica E4 
+    <br?
+    .csv files in this archive are in the following format:<br>
+    The first row is the initial time of the session expressed as unix timestamp in UTC.<br>
+    The second row is the sample rate expressed in Hz.<br>
+    <br>
+    <strong>TEMP.csv:</strong> Data from temperature sensor expressed degrees on the Celsius (°C) scale.<br>
+    <br>
+    <strong>EDA.csv:</strong> Data from the electrodermal activity sensor expressed as microsiemens (μS).<br>
+    <br>
+    <strong>BVP.csv:</strong> Data from photoplethysmograph.<br>
+    <br>
+    <strong>ACC.csv:</strong> Data from 3-axis accelerometer sensor.<br>
+    The accelerometer is configured to measure acceleration in the range [-2g, 2g].<br>
+    Therefore the unit in this file is 1/64g.<br>
+    Data from x, y, and z axis are respectively in first, second, and third column.<br>
+    <br>
+    <strong>IBI.csv:</strong> Time between individuals heart beats extracted from the BVP signal.<br>
+    No sample rate is needed for this file.<br>
+    The first column is the time (respect to the initial time) of the detected inter-beat<br>
+    interval expressed in seconds (s).
+    The second column is the duration in seconds (s) of the detected inter-beat interval<br>
+    (i.e., the distance in seconds from the previous beat).<br>
+    <br>
+    <strong>HR.csv:</strong> Average heart rate extracted from the BVP signal.
+    <br>
+    The first row is the initial time of the session expressed as unix timestamp in UTC. The second row is the sample rate expressed in Hz.<br>
+    <br>
+    <strong>tags.csv:</strong> Event mark times.<br>
+    Each row corresponds to a physical button press on the device; the same time as the status LED is first illuminated. The time is expressed as a unix timestamp in UTC and it is synchronized with initial time of the session indicated in the related data files from the corresponding session.
+  embrace-plus: >
+    Select a ZIP file here, recorded by the <strong>Empatica Embrace Plus</strong><br>
+    <br>
+    Data must be in the standard format provided by Empatica.<br>
+    A zip-file downloaded from Empatica contains several avro files that contain information on the physiological data that is recorded with the Empatica Embrace Plus<br>
+    <br>
+    The avro files contain the following data:<br>
+    <br>
+    <strong>Accelerometer</strong>: Data from 3-axis accelerometer sensor.<br>
+    <br>
+    <strong>Gyroscope</strong>: Data from 3-axis gyroscope sensor.<br>
+    <br>
+    <strong>EDA</strong>: Data from the electrodermal activity sensor expressed as microsiemens (μS).<br>
+    <br>
+    <strong>Temperature</strong>: Data from temperature sensor expressed degrees on the Celsius (°C) scale.<br>
+    <br>
+    <strong>BVP</strong>: Data from photoplethysmograph.<br>
+    <br>
+    <strong>Steps</strong>: Data from the step counter sensor.<br>
+    <br>
+    <strong>Systolic Peaks</strong>: Data from the systolic peaks sensor.
 calendar: >
   Select a calendar file here. A calendar is an XLSX/XLS/TXT file that contains a table with five columns.<br>
   The column names are used by the application, so make sure to name them accordingly, and also use the correct date and time format.<br>
