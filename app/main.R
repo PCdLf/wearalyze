@@ -42,9 +42,10 @@ server <- function(id) {
          style = "color: black;"),
       p("Please try to reconnect."),
       div(
-        img(src = "static/logos/wearalyze_oops.png", 
+        img(src = "https://github.com/PCdLf/wearalyze/blob/main/app/static/logos/wearalyz_oops.png?raw=true", 
             width = "300px")
       ),
+      br(),
       div(
         reload_button("Reconnect", class = "warning")
       )
