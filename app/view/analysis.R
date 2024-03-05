@@ -4,6 +4,7 @@ box::use(
   dplyr[group_by, select, summarize],
   dygraphs[dyAxis, dygraph, dyRangeSelector, dyOptions],
   kableExtra[kable, kable_styling],
+  knitr[asis_output],
   lubridate[day, hour, minute, month, second, year],
   padr[thicken],
   rmarkdown[render],
@@ -14,7 +15,7 @@ box::use(
   shinyjs[hidden, hide, show],
   shinytoastr[toastr_info, toastr_warning],
   utils[tail],
-  wearables[filter_e4data_datetime, process_e4],
+  wearables[filter_datetime, process_e4, process_embrace_plus],
   xts[xts]
 )
 
@@ -81,7 +82,7 @@ ui <- function(id){
 
 
 
-server <- function(id, data = reactive(NULL), plots = reactive(NULL), calendar = reactive(NULL)) {
+server <- function(id, data = reactive(NULL), plots = reactive(NULL), calendar = reactive(NULL), device) {
   moduleServer(id, function(input, output, session) {
     
     # Modules --------------------------------------
@@ -95,7 +96,7 @@ server <- function(id, data = reactive(NULL), plots = reactive(NULL), calendar =
       
       req(nrow(data$EDA) >0)
       
-      tms <- range(data$EDA$DateTime)
+      tms <- range(data$EDA[[functions$get_datetime_column(data$EDA)]])
       updateDateInput(session, "date_analysis_start",
                       value = min(as.Date(tms)),
                       min = min(as.Date(tms)),
@@ -154,9 +155,21 @@ server <- function(id, data = reactive(NULL), plots = reactive(NULL), calendar =
       )
       
       data <- data()$data
-      data <- filter_e4data_datetime(data, start, end)
       
-      analysis_out <- process_e4(data)
+      data <- filter_datetime(data, start, end)
+      
+      switch(device,
+             e4 = {
+               analysis_out <- process_e4(data)
+             },
+             `embrace-plus` = {
+               analysis_out <- process_embrace_plus(data)
+             },
+             #TODO: nowatch
+             nowatch = {
+               analysis_out <- process_nowatch(data)
+             }
+      )
       
       last_analysis(
         analysis_out
@@ -187,7 +200,7 @@ server <- function(id, data = reactive(NULL), plots = reactive(NULL), calendar =
     
     output$btn_download_report <- downloadHandler(
       
-      filename = "e4_analysis.html",
+      filename = paste0(device, "_analysis.html"),
       
       content = function(file){
         

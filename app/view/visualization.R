@@ -6,18 +6,19 @@ box::use(
   dygraphs[dygraphOutput, renderDygraph],
   lubridate[ymd_hms],
   shiny[actionButton, bindEvent, br, checkboxInput, column, fluidRow, hr, 
-        icon, moduleServer, NS, observe, radioButtons,
+        icon, isTruthy, moduleServer, NS, observe, radioButtons,
         reactive, reactiveVal, renderUI, req, tagList, tags, textInput, uiOutput,
         updateActionButton],
   shinycssloaders[withSpinner],
-  shinyjs[show],
-  shinytoastr[toastr_info, toastr_success]
+  shinyjs[hide, show],
+  shinytoastr[toastr_info, toastr_success],
+  tictoc[tic, toc]
 )
 
 box::use(
   app/logic/constants,
   app/logic/functions,
-  app/logic/functions_e4,
+  app/logic/functions_devices,
   app/view/components/helpButton,
   app/view/components/visSeriesOptions
 )
@@ -57,21 +58,24 @@ ui <- function(id) {
                  
           ),
           column(7,
-                 tags$h4("EDA"),
-                 visSeriesOptions$ui(ns("eda"), y_range = constants$app_config$visualisation$eda$yrange),
-                 tags$hr(),
+                 tags$div(id = ns("eda_options"),
+                          tags$h4("EDA"),
+                          visSeriesOptions$ui(ns("eda"), y_range = constants$app_config$visualisation$eda$yrange),
+                          tags$hr()),
                  
-                 tags$h4("HR"),
-                 visSeriesOptions$ui(ns("hr"), y_range =constants$app_config$visualisation$hr$yrange),
-                 tags$hr(),
+                 tags$div(id = ns("hr_options"),
+                          tags$h4("HR"),
+                          visSeriesOptions$ui(ns("hr"), y_range =constants$app_config$visualisation$hr$yrange),
+                          tags$hr()),
                  
-                 tags$h4("TEMP"),
-                 visSeriesOptions$ui(ns("temp"), y_range = constants$app_config$visualisation$temp$yrange),
-                 tags$hr(),
+                 tags$div(id = ns("temp_options"),
+                          tags$h4("TEMP"),
+                          visSeriesOptions$ui(ns("temp"), y_range = constants$app_config$visualisation$temp$yrange),
+                          tags$hr()),
                  
-                 tags$h4("MOVE"),
-                 visSeriesOptions$ui(ns("move"), y_range = constants$app_config$visualisation$move$yrange)
-                 
+                 tags$div(id = ns("move_options"),
+                          tags$h4("MOVE"),
+                          visSeriesOptions$ui(ns("move"), y_range = constants$app_config$visualisation$move$yrange))
           )
         )
         
@@ -117,6 +121,17 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL), device)
     y_move <- visSeriesOptions$server("move", selected = "custom", custom_y = constants$app_config$visualisation$move$custom_y)
     
     # Functionality ---------------------------------
+    observe({
+      req(data()$data)
+      
+      if (!"HR" %in% names(data()$data)) {
+        hide("hr_options")
+      }
+      
+      if (!"ACC" %in% names(data()$data)) {
+        hide("move_options")
+      }
+    })
     
     functions$hide_tab("plottab")
     functions$hide_tab("plotannotations")
@@ -134,7 +149,7 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL), device)
     # Option to plot aggregated data (or not),
     # only visible if less than 2 hours of data, otherwise the plot will not be responsive.
     data_range_hours <- reactive({
-      functions$e4_data_datetime_range(data()$data)
+      functions$data_datetime_range(data()$data)
     })
     
     output$ui_plot_agg_data <- renderUI({
@@ -179,6 +194,8 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL), device)
       
       toastr_info("Plot construction started...")
       
+      tic()
+      
       # Precalc. timeseries (for viz.)
       if(is.null(input$rad_plot_agg)){
         agg <- "Yes"
@@ -186,15 +203,15 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL), device)
         agg <- input$rad_plot_agg
       }
       
-      if(agg == "Yes"){
-        timeseries <- functions_e4$make_e4_timeseries(data$data_agg)
+      if (agg == "Yes") {
+        timeseries <- functions_devices$make_timeseries(data$data_agg)
       } else {
-        timeseries <- functions_e4$make_e4_timeseries(data$data)
+        timeseries <- functions_devices$make_timeseries(data$data)
       }
       
       functions$show_tab("plottab")
       
-      if(nrow(calendar()) > 0){
+      if (isTruthy(calendar())) {
         functions$show_tab("plotannotations")
       }
       
@@ -207,12 +224,12 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL), device)
         annotatedata <- NULL
       }
       
-      plots <- functions_e4$e4_timeseries_plot(timeseries,
-                                               main_title = input$txt_plot_main_title,
-                                               calendar_data = annotatedata,
-                                               plot_tags = isTRUE(input$rad_plot_tags == "Yes"),
-                                               tags = data$data$tags,
-                                               series_options = series_options()
+      plots <- functions_devices$timeseries_plot(timeseries,
+                                                 main_title = input$txt_plot_main_title,
+                                                 calendar_data = annotatedata,
+                                                 plot_tags = isTRUE(input$rad_plot_tags == "Yes"),
+                                                 tags = data$data$tags,
+                                                 series_options = series_options()
       )
       
       plot_output(
@@ -224,8 +241,8 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL), device)
       output$dygraph_current_data3 <- renderDygraph(plots[[3]])
       output$dygraph_current_data4 <- renderDygraph(plots[[4]])
       
+      toc()
       
-      # 
       toastr_success("Plot constructed, click on the 'Plot' tab!")
       updateActionButton(session, "btn_make_plot", label = "Update plot", icon = icon("sync"))
       functions$enable_link(menu = device,
@@ -244,8 +261,8 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL), device)
       
       calendar() |> 
         filter(
-          !((Start > ran[[2]] && End > ran[[2]]) |
-              (Start < ran[[1]] && End < ran[[1]]))
+          (Start <= ran[[2]] & End <= ran[[2]]) &
+            (Start >= ran[[1]] & End >= ran[[1]])
         )
       
     })

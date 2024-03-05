@@ -9,7 +9,9 @@ box::use(
   shinytoastr[toastr_success, toastr_error],
   stats[runif],
   stringr[str_to_title],
-  wearables[aggregate_e4_data, rbind_e4, read_e4, read_embrace_plus]
+  wearables[aggregate_e4_data, aggregate_embrace_plus_data,
+            rbind_e4, rbind_embrace_plus,
+            read_e4, read_embrace_plus]
 )
 
 box::use(
@@ -29,13 +31,13 @@ ui <- function(id, device) {
     card(
       card_header("Start"),
       fluidRow(
-        column(6, 
+        column(8, 
                tags$p(glue("This Shiny application was designed to visualize and process {constants$device_config[[device]]$company} {device_name} data.")),
                tags$p(glue("The {constants$device_config[[device]]$company} {device_name} is a wearable wristband that can be used to record physiological signals such as heart rate, temperature, movement and skin conductance.")),
                tags$p("The data will not be permanently stored on the server, no trackers or cookies are used.")
         ),
         
-        column(6,
+        column(4,
                tags$a(href = constants$device_config[[device]]$website, target = "_blank",
                       tags$img(src = glue("static/devices/{device}.png"), 
                                height = "150px", 
@@ -46,20 +48,20 @@ ui <- function(id, device) {
       ),
       fluidRow(style = "padding-top: 24px;",
                
-               column(3, functions$logo_image_with_link("static/logos/logo_deborg.svg", "https://www.deborg.nl/", width = "100%")),
-               column(3, functions$logo_image_with_link("static/logos/mit_media_lab.png", "https://www.media.mit.edu/groups/affective-computing/overview/", width = "100%")),
-               column(3, functions$logo_image_with_link("static/logos/u_twente.png","https://www.utwente.nl/nl/bms/pgt/", width = "100%"))
+               column(4, functions$logo_image_with_link("static/logos/logo_deborg.svg", "https://www.deborg.nl/", width = "100%")),
+               column(4, functions$logo_image_with_link("static/logos/mit_media_lab.png", "https://www.media.mit.edu/groups/affective-computing/overview/", width = "100%")),
+               column(4, functions$logo_image_with_link("static/logos/u_twente.png","https://www.utwente.nl/nl/bms/pgt/", width = "100%"))
       ),
       fluidRow(
-        column(3, functions$logo_image_with_link("static/logos/umcu.png", "https://www.umcutrecht.nl/nl/innovatie-in-de-psychiatrie", width = "100%")),
-        column(3, functions$logo_image_with_link("static/logos/radboud.png","https://www.ru.nl/bsi/", width = "100%"))
+        column(4, functions$logo_image_with_link("static/logos/umcu.png", "https://www.umcutrecht.nl/nl/innovatie-in-de-psychiatrie", width = "100%")),
+        column(4, functions$logo_image_with_link("static/logos/radboud.png","https://www.ru.nl/bsi/", width = "100%"))
         
       )
     ),
     card(
       card_header("Data input"),
       tags$div(style = "width: 100%;",
-               tags$div(style = "float: right;",
+               tags$div(style = "position: absolute; right: 10px",
                         helpButton$ui(ns("help"))
                )
       ),
@@ -113,9 +115,33 @@ server <- function(id, device) {
     helpButton$server("help", helptext = constants$help_config$dataupload)
     
     # Functionality ---------------------------------
-    if (device != "e4") {
-      hide('btn_use_example_data_small')
-    } 
+    # check if _small or _large files are available for device
+    switch(device,
+           e4 = {
+             if(!file.exists("./app/static/example_data/e4_large.zip")){
+               hide("btn_use_example_data_large")
+             }
+             if(!file.exists("./app/static/example_data/e4_small.zip")){
+               hide("btn_use_example_data_small")
+             }
+           },
+           `embrace-plus` = {
+             if(!file.exists("./app/static/example_data/embrace-plus_large.zip")){
+               hide("btn_use_example_data_large")
+             }
+             if(!file.exists("./app/static/example_data/embrace-plus_small.zip")){
+               hide("btn_use_example_data_small")
+             }
+           },
+           nowatch = {
+             if(!file.exists("./app/static/example_data/nowatch_large.zip")){
+               hide("btn_use_example_data_large")
+             }
+             if(!file.exists("./app/static/example_data/nowatch_small.zip")){
+               hide("btn_use_example_data_small")
+             }
+           }
+    )
     
     observe({
       rv$zip_files <- data.frame(
@@ -180,14 +206,21 @@ server <- function(id, device) {
           
           # If more than 1 zip file selected, row-bind them using our custom function
           incProgress(1/n, detail = "Row-binding")
-          if(length(fns) > 1){
-            rv$data <- rbind_e4(data)
-          } else {
-            rv$data <- data[[1]]
-          }
           
-          # Calculate aggregated version of the data for much quicker plotting
-          rv$data_agg <- aggregate_e4_data(rv$data)
+          switch(device,
+                 e4 = {
+                   rv$data <- rbind_e4(data)
+                   rv$data_agg <- aggregate_e4_data(rv$data)
+                 },
+                 `embrace-plus` = {
+                   rv$data <- rbind_embrace_plus(data[[1]])
+                   rv$data_agg <- aggregate_embrace_plus_data(rv$data)
+                 },
+                 #TODO: Add nowatch
+                 nowatch = {
+                   rv$data <- rbind_nowatch(data)
+                   rv$data_agg <- aggregate_nowatch_data(rv$data)
+                 })
           
           rv$newdata <- runif(1)
           

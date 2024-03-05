@@ -63,7 +63,8 @@ server <- function(id, device) {
     data_in <- dataUpload$server(id = paste0(device, "-data"), 
                                  device = device)
     
-    calendar <- calendar$server(id = paste0(device, "-calendar"))
+    calendar <- calendar$server(id = paste0(device, "-calendar"),
+                                device = device)
     
     visualization <- visualization$server(id = paste0(device, "-visualization"),
                                           data = data_in,
@@ -73,12 +74,14 @@ server <- function(id, device) {
     analysis$server(id = paste0(device, "-analysis"),
                     data = data_in,
                     plots = visualization,
-                    calendar = calendar)
-    
+                    calendar = calendar,
+                    device = device)
+
     cutData$server(id = paste0(device, "-cut"),
                    data = data_in)
-    
-    batch$server(id = paste0(device, "-batch"))
+
+    batch$server(id = paste0(device, "-batch"),
+                 device = device)
     
   })
 }
