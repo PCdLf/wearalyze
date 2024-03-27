@@ -11,8 +11,7 @@ box::use(
         updateActionButton],
   shinycssloaders[withSpinner],
   shinyjs[hide, show],
-  shinytoastr[toastr_info, toastr_success],
-  tictoc[tic, toc]
+  shinytoastr[toastr_info, toastr_success]
 )
 
 box::use(
@@ -194,8 +193,6 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL), device)
       
       toastr_info("Plot construction started...")
       
-      tic()
-      
       # Precalc. timeseries (for viz.)
       if(is.null(input$rad_plot_agg)){
         agg <- "Yes"
@@ -240,8 +237,6 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL), device)
       output$dygraph_current_data2 <- renderDygraph(plots[[2]])
       output$dygraph_current_data3 <- renderDygraph(plots[[3]])
       output$dygraph_current_data4 <- renderDygraph(plots[[4]])
-      
-      toc()
       
       toastr_success("Plot constructed, click on the 'Plot' tab!")
       updateActionButton(session, "btn_make_plot", label = "Update plot", icon = icon("sync"))
