@@ -12,7 +12,7 @@ library(kableExtra)
 knitr::opts_chunk$set(echo = FALSE)
 ```
 
-# Timeseries plot
+# Timeseries plots
 
 ```{r}
 
@@ -35,6 +35,8 @@ plots[[4]] |>
 
 ```
 
+# Data quality based on Interbeat Intervals available
+
 ```{r}
 data <- analysis$data
 
@@ -54,7 +56,7 @@ if (!is.null(data$IBI)) {
 ```
 
 
-# Data quality
+# Data quality based on EDA artifact detection
 
 ```{r}
 eda_bin_plot_data <- thicken(analysis$eda_bin, interval = "1 min", colname = "datetime_1min") |>
@@ -70,7 +72,7 @@ dygraph(x_data, height = 200, width = 900, ylab = "Fraction bad data") |>
 
 # Calendar events
 
-```{r eval=TRUE}
+```{r chunck-label, eval=TRUE}
 
 kable(calendar, format = "html") |>
   kable_styling()
@@ -80,9 +82,7 @@ kable(calendar, format = "html") |>
 
 # Analysis output
 
-## IBI Time analysis
-
-```{r eval=TRUE warning=FALSE}
+```{r eval=TRUE, warning=FALSE}
 
 functions$analysis_summary_table(analysis) |>
   kable(format = "html", digits = 2) |>
