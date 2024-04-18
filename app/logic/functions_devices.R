@@ -15,17 +15,34 @@ box::use(
 # this timeseries is used in timeseries_plot
 make_timeseries <- function(data){
   
+  # remove unix_timestamp column from data
+  data <- lapply(data, function(x) {
+    if (is.data.frame(x)){
+      x <- x[!grepl("unix_timestamp", names(x))]
+    }
+    return(x)
+  })
+  
   if ("HR" %in% names(data)){
     HR_timeseries <- as_timeseries(data$HR, name_col = "HR")
   } else {
     HR_timeseries <- as_timeseries(data.frame(DateTime = data$EDA$DateTime, HR = NA), name_col = "HR")
   }
   
+  if ("ACC" %in% names(data)){
+    MOVE_timeseries <- as_timeseries(data$ACC, index = which(names(data$ACC) == "a"), name_col = "Movement")
+  } else if ("MOVE" %in% names(data)){
+    # For embraceplus data this is accelerometer_std_g (index 3)
+    MOVE_timeseries <- as_timeseries(data$MOVE, 3, name_col = "Movement")
+  } else {
+    MOVE_timeseries <- as_timeseries(data.frame(DateTime = data$EDA$DateTime, Movement = NA), name_col = "Movement")
+  }
+  
   list(
     EDA = as_timeseries(data$EDA, name_col = "EDA"),
     HR = HR_timeseries,
     TEMP = as_timeseries(data$TEMP, name_col = "Temperature"),
-    MOVE = as_timeseries(data$ACC, index = which(names(data$ACC) == "a"), name_col = "Movement")
+    MOVE = MOVE_timeseries
   )
   
 }
