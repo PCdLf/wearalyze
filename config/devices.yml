@@ -1,11 +1,14 @@
 e4: 
   website: https://www.empatica.com/research/e4/
   company: Empatica
+  aggregated: FALSE
   
 embrace-plus:
   website: https://www.empatica.com/en-eu/embraceplus/
   company: Empatica
+  aggregated: TRUE
   
 nowatch: 
   website: https://nowatch.com
   company: ''
+  aggregated: FALSE

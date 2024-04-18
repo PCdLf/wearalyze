@@ -5,6 +5,7 @@ box::use(
   shiny[bindEvent, div, NS, fluidRow, tags, column, fileInput, actionButton, htmlOutput, icon,
         uiOutput, reactiveValues, tagList, br, moduleServer, observe, p, withProgress,
         renderUI, req, reactive, incProgress],
+  shinyFiles[shinyDirButton, shinyDirChoose],
   shinyjs[hidden, hide, show],
   shinytoastr[toastr_success, toastr_error],
   stats[runif],
@@ -75,6 +76,19 @@ ui <- function(id, device) {
                          accept = ".zip",
                          buttonLabel = "Browse..."),
                
+               # if device is embrace-plus or nowatch, show button to choose dir
+               if(device %in% c("embrace-plus", "nowatch")){
+                 tagList(
+                   tags$p("Or, select a folder containing the data files."),
+                   shinyDirButton(ns("select_folder"), 
+                                  label = "Select folder",
+                                  title = "Select folder",
+                                  icon = icon("folder-open"), 
+                                  class = "btn-light"),
+                   br()
+                 )
+               },
+               
                tags$p("Or, use one of the built-in example datasets.",
                       style = "font-size: 0.95em; font-style: italic;"),
                actionButton(ns("btn_use_example_data_large"), "Use large example dataset", 
@@ -101,6 +115,8 @@ ui <- function(id, device) {
 server <- function(id, device) {
   moduleServer(id, function(input, output, session) {
     
+    aggregated <- constants$device_config[[device]]$aggregated
+    
     # Reactive values -------------------------------
     rv <- reactiveValues(
       zip_files = NULL,
@@ -110,6 +126,12 @@ server <- function(id, device) {
       newdata = NULL,
       fn_names = NULL
     )
+    
+    # Functionality ---------------------------------
+    shinyDirChoose(input, 
+                   "select_folder",
+                   roots = c(home = ifelse(.Platform$OS.type == "windows", "C:", "~"), 
+                             wd = "."))
     
     # Modules --------------------------------------
     helpButton$server("help", helptext = constants$help_config$dataupload[[device]])
@@ -126,18 +148,18 @@ server <- function(id, device) {
              }
            },
            `embrace-plus` = {
-             if(!file.exists("./app/static/example_data/embrace-plus_large.zip")){
+             if(!file.exists(glue("./app/static/example_data/embrace-plus{ifelse(aggregated, '-agg', '')}_large.zip"))){
                hide("btn_use_example_data_large")
              }
-             if(!file.exists("./app/static/example_data/embrace-plus_small.zip")){
+             if(!file.exists(glue("./app/static/example_data/embrace-plus{ifelse(aggregated, '-agg', '')}_small.zip"))){
                hide("btn_use_example_data_small")
              }
            },
            nowatch = {
-             if(!file.exists("./app/static/example_data/nowatch_large.zip")){
+             if(!file.exists(glue("./app/static/example_data/nowatch{ifelse(aggregated, '-agg', '')}_large.zip"))){
                hide("btn_use_example_data_large")
              }
-             if(!file.exists("./app/static/example_data/nowatch_small.zip")){
+             if(!file.exists(glue("./app/static/example_data/nowatch{ifelse(aggregated, '-agg', '')}_small.zip"))){
                hide("btn_use_example_data_small")
              }
            }
@@ -148,7 +170,7 @@ server <- function(id, device) {
         name = glue("{device}_large.zip"),
         size = NA,
         type = "application/x-zip-compressed",
-        datapath = glue("./app/static/example_data/{device}_large.zip")
+        datapath = glue("./app/static/example_data/{device}{ifelse(aggregated, '-agg', '')}_large.zip")
       )
     }) |> bindEvent(input$btn_use_example_data_large)
     
@@ -157,7 +179,7 @@ server <- function(id, device) {
         name = glue("{device}_small.zip"),
         size = NA,
         type = "application/x-zip-compressed",
-        datapath = glue("./app/static/example_data/{device}_small.zip")
+        datapath = glue("./app/static/example_data/{device}{ifelse(aggregated, '-agg', '')}_small.zip")
       )
     }) |> bindEvent(input$btn_use_example_data_small)
     
