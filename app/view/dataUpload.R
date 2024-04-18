@@ -85,6 +85,7 @@ ui <- function(id, device) {
                                   title = "Select folder",
                                   icon = icon("folder-open"), 
                                   class = "btn-light"),
+                   br(),
                    br()
                  )
                },
