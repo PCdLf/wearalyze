@@ -33,7 +33,7 @@ make_timeseries <- function(data){
     MOVE_timeseries <- as_timeseries(data$ACC, index = which(names(data$ACC) == "a"), name_col = "Movement")
   } else if ("MOVE" %in% names(data)){
     # For embraceplus data this is accelerometer_std_g (index 3)
-    MOVE_timeseries <- as_timeseries(data$MOVE, 3, name_col = "Movement")
+    MOVE_timeseries <- as_timeseries(data$MOVE, index = 3, name_col = "Movement")
   } else {
     MOVE_timeseries <- as_timeseries(data.frame(DateTime = data$EDA$DateTime, Movement = NA), name_col = "Movement")
   }
