@@ -166,6 +166,31 @@ server <- function(id, device) {
     )
     
     observe({
+      
+      req(input$select_folder)
+      
+      if(length(input$select_folder) > 1){
+        # if windows, use \, otherwise use /
+        if (.Platform$OS.type == "windows") {
+          chc <- paste0(ifelse(input$select_folder$root == "home", ifelse(.Platform$OS.type == "windows", "C:", "~"), "."), 
+                        paste0(input$select_folder$path, collapse = "\\")
+          )
+        } else {
+          chc <- paste0(ifelse(input$select_folder$root == "home", ifelse(.Platform$OS.type == "windows", "C:", "~"), "."), 
+                        paste0(input$select_folder$path, collapse = "/")
+          )
+        }
+      } else {
+        chc <- NA
+      }
+      
+      if(!is.na(chc)){
+        rv$folder <- chc
+      }
+      
+    }) 
+    
+    observe({
       rv$zip_files <- data.frame(
         name = glue("{device}_large.zip"),
         size = NA,
@@ -265,6 +290,47 @@ server <- function(id, device) {
         
       })
       
+    })
+    
+    observe({
+      
+      req(rv$folder)
+      
+      switch(device,
+             `embrace-plus` = {
+               out <- read_embrace_plus(folder = rv$folder, type = "aggregated")
+             },
+             nowatch = {
+               out <- read_nowatch(folder = rv$folder)
+             })
+      
+      if(is.null(out)){
+        
+        toastr_error("Something went wrong with getting the data - check folder!")
+        
+      } else {
+        switch(device,
+               `embrace-plus` = {
+                 rv$data <- out
+                 rv$data_agg <- aggregate_embrace_plus_data(rv$data)
+               },
+               nowatch = {
+                 rv$data <- out
+                 rv$data_agg <- aggregate_nowatch_data(rv$data)
+               })
+        
+        rv$newdata <- runif(1)
+        
+        # Message: data read!
+        toastr_success("Data read successfully.")
+        
+        functions$enable_link(menu = device, name = "Calendar")
+        functions$enable_link(menu = device, name = "Visualization")
+        functions$enable_link(menu = device, name = "Data cutter")
+        
+        hide("div_upload_file")
+        show("div_restart_application")
+      } 
     })
     
     output$msg_data_read <- renderUI({
