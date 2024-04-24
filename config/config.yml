@@ -3,7 +3,7 @@ visualisation:
     yrange: [0,20]
     color: "#1874CD"
   hr:
-    yrange: [40, 160]
+    yrange: [40, 200]
     color: "#FF7F00"
   temp:
     yrange: [24, 38]

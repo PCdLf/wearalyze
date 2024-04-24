@@ -127,9 +127,10 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL), device)
         hide("hr_options")
       }
       
-      if (!"ACC" %in% names(data()$data)) {
+      if (!"ACC" %in% names(data()$data) && !"MOVE" %in% names(data()$data)) {
         hide("move_options")
       }
+      
     })
     
     functions$hide_tab("plottab")
