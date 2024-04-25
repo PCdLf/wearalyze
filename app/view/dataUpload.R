@@ -169,22 +169,22 @@ server <- function(id, device, r) {
                }
              },
              `embrace-plus` = {
-               if(!file.exists(glue("./app/static/example_data/embrace-plus{ifelse(rv$aggregated, '-agg', '')}_large.zip")) & 
-                  !dir.exists(glue("./app/static/example_data/embrace-plus{ifelse(rv$aggregated, '-agg', '')}_large"))) {
+               if(!file.exists("./app/static/example_data/embrace-plus_large.zip") & 
+                  !dir.exists("./app/static/example_data/embrace-plus_large")) {
                  hide("btn_use_example_data_large")
                }
-               if(!file.exists(glue("./app/static/example_data/embrace-plus{ifelse(rv$aggregated, '-agg', '')}_small.zip")) & 
-                  !dir.exists(glue("./app/static/example_data/embrace-plus{ifelse(rv$aggregated, '-agg', '')}_small"))){
+               if(!file.exists("./app/static/example_data/embrace-plus_small.zip") & 
+                  !dir.exists("./app/static/example_data/embrace-plus_small")){
                  hide("btn_use_example_data_small")
                }
              },
              nowatch = {
-               if(!file.exists(glue("./app/static/example_data/nowatch{ifelse(rv$aggregated, '-agg', '')}_large.zip")) & 
-                  !dir.exists(glue("./app/static/example_data/nowatch{ifelse(rv$aggregated, '-agg', '')}_large"))){
+               if(!file.exists("./app/static/example_data/nowatch_large.zip") & 
+                  !dir.exists("./app/static/example_data/nowatch_large")){
                  hide("btn_use_example_data_large")
                }
-               if(!file.exists(glue("./app/static/example_data/nowatch{ifelse(rv$aggregated, '-agg', '')}_small.zip")) & 
-                  !dir.exists(glue("./app/static/example_data/nowatch{ifelse(rv$aggregated, '-agg', '')}_small"))){
+               if(!file.exists("./app/static/example_data/nowatch_small.zip") & 
+                  !dir.exists("./app/static/example_data/nowatch_small")){
                  hide("btn_use_example_data_small")
                }
              }
@@ -238,13 +238,13 @@ server <- function(id, device, r) {
       disable("btn_use_example_data_small")
       
       if (device %in% c("embrace-plus", "nowatch")) {
-        rv$folder <- glue("./app/static/example_data/{device}{ifelse(rv$aggregated, '-agg', '')}_small")
+        rv$folder <- glue("./app/static/example_data/{device}_small")
       } else {
         rv$zip_files <- data.frame(
           name = glue("{device}_small.zip"),
           size = NA,
           type = "application/x-zip-compressed",
-          datapath = glue("./app/static/example_data/{device}{ifelse(rv$aggregated, '-agg', '')}_small.zip")
+          datapath = glue("./app/static/example_data/{device}_small.zip")
         )
       }
       

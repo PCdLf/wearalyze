@@ -68,7 +68,7 @@ ui <- function(id){
 
 
 
-server <- function(id, device) {
+server <- function(id, device, r) {
   moduleServer(id, function(input, output, session) {
     
     calendar_out <- reactiveVal()
@@ -87,7 +87,7 @@ server <- function(id, device) {
              }
            },
            `embrace-plus` = {
-             if(!file.exists("./app/static/example_data/embrace-plus_calendar_large.xlsx")){
+             if(!file.exists(glue("./app/static/example_data/embrace-plus_calendar_large.xlsx"))){
                hide("btn_use_example_data_large")
              }
              if(!file.exists("./app/static/example_data/embrace-plus_calendar_small.xlsx")){

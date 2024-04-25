@@ -90,7 +90,8 @@ ui <- function(id) {
         ),
         dygraphOutput(ns("dygraph_current_data2"), height = "140px"),
         dygraphOutput(ns("dygraph_current_data3"), height = "140px"),
-        dygraphOutput(ns("dygraph_current_data4"), height = "140px")
+        dygraphOutput(ns("dygraph_current_data4"), height = "140px"),
+        uiOutput(ns("dygraph_notes"))
       ),
       
       nav_panel(
@@ -258,8 +259,11 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL), device,
       
       toastr_success("Plot constructed, click on the 'Plot' tab!")
       updateActionButton(session, "btn_make_plot", label = "Update plot", icon = icon("sync"))
-      functions$enable_link(menu = device,
-                            name = "Analysis")
+      
+      if(r$type == "raw"){
+        functions$enable_link(menu = device,
+                              name = "Analysis")
+      }
       
     }) |> bindEvent(input$btn_make_plot)
     
@@ -278,6 +282,14 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL), device,
             (Start >= ran[[1]] & End >= ran[[1]])
         )
       
+    })
+    
+    output$dygraph_notes <- renderUI({
+      if (device == "embrace-plus"&& r$type == "raw") {
+        p("Note: the Embrace Plus device does not have HR per second 
+          available when data is in raw format. The aggregated HR is available
+          from the digital biomarkers and the BVP signal is available from the raw data.")
+      }
     })
     
     
