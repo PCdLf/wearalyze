@@ -2,11 +2,11 @@
 box::use(
   bslib[card, card_header],
   glue[glue],
-  shiny[bindEvent, div, NS, fluidRow, tags, column, fileInput, actionButton, htmlOutput, icon,
+  shiny[bindEvent, checkboxInput, div, NS, fluidRow, tags, column, fileInput, actionButton, htmlOutput, icon,
         uiOutput, reactiveValues, tagList, br, moduleServer, observe, p, withProgress,
         renderUI, req, reactive, incProgress],
   shinyFiles[shinyDirButton, shinyDirChoose],
-  shinyjs[hidden, hide, show],
+  shinyjs[disable, enable, hidden, hide, show],
   shinytoastr[toastr_success, toastr_error],
   stats[runif],
   stringr[str_to_title],
@@ -70,6 +70,13 @@ ui <- function(id, device) {
       tags$div(id = ns("div_upload_file"),
                tags$p(glue("Click Browse to select {device_name} zip files to use in the application.")),
                
+               # if device is embrace-plus, add checkbox with aggregated data
+               if (device == "embrace-plus") {
+                 checkboxInput(ns("use_aggregated"), 
+                               label = "Use aggregated data",
+                               value = constants$device_config[[device]]$aggregated)
+               },
+               
                fileInput(ns("select_zip_files"),
                          label = "Choose ZIP file(s)", 
                          multiple = TRUE, 
@@ -77,7 +84,7 @@ ui <- function(id, device) {
                          buttonLabel = "Browse..."),
                
                # if device is embrace-plus or nowatch, show button to choose dir
-               if(device %in% c("embrace-plus", "nowatch")){
+               if (device %in% c("embrace-plus", "nowatch")) {
                  tagList(
                    tags$p("Or, select a folder containing the data files."),
                    shinyDirButton(ns("select_folder"), 
@@ -115,9 +122,7 @@ ui <- function(id, device) {
 
 server <- function(id, device) {
   moduleServer(id, function(input, output, session) {
-    
-    aggregated <- constants$device_config[[device]]$aggregated
-    
+  
     # Reactive values -------------------------------
     rv <- reactiveValues(
       zip_files = NULL,
@@ -125,8 +130,16 @@ server <- function(id, device) {
       timeseries = NULL,
       data_agg = NULL,
       newdata = NULL,
-      fn_names = NULL
+      fn_names = NULL,
+      aggregated = constants$device_config[[device]]$aggregated
     )
+    
+    # if checkbox is used, update rv$aggregated
+    observe({
+      if (device == "embrace-plus") {
+        rv$aggregated <- input$use_aggregated
+      }
+    })
     
     # Functionality ---------------------------------
     shinyDirChoose(input, 
@@ -139,36 +152,38 @@ server <- function(id, device) {
     
     # Functionality ---------------------------------
     # check if _small or _large files are available for device
-    switch(device,
-           e4 = {
-             if(!file.exists("./app/static/example_data/e4_large.zip")){
-               hide("btn_use_example_data_large")
+    observe({
+      switch(device,
+             e4 = {
+               if(!file.exists("./app/static/example_data/e4_large.zip")){
+                 hide("btn_use_example_data_large")
+               }
+               if(!file.exists("./app/static/example_data/e4_small.zip")){
+                 hide("btn_use_example_data_small")
+               }
+             },
+             `embrace-plus` = {
+               if(!file.exists(glue("./app/static/example_data/embrace-plus{ifelse(rv$aggregated, '-agg', '')}_large.zip")) & 
+                  !dir.exists(glue("./app/static/example_data/embrace-plus{ifelse(rv$aggregated, '-agg', '')}_large"))) {
+                 hide("btn_use_example_data_large")
+               }
+               if(!file.exists(glue("./app/static/example_data/embrace-plus{ifelse(rv$aggregated, '-agg', '')}_small.zip")) & 
+                  !dir.exists(glue("./app/static/example_data/embrace-plus{ifelse(rv$aggregated, '-agg', '')}_small"))){
+                 hide("btn_use_example_data_small")
+               }
+             },
+             nowatch = {
+               if(!file.exists(glue("./app/static/example_data/nowatch{ifelse(rv$aggregated, '-agg', '')}_large.zip")) & 
+                  !dir.exists(glue("./app/static/example_data/nowatch{ifelse(rv$aggregated, '-agg', '')}_large"))){
+                 hide("btn_use_example_data_large")
+               }
+               if(!file.exists(glue("./app/static/example_data/nowatch{ifelse(rv$aggregated, '-agg', '')}_small.zip")) & 
+                  !dir.exists(glue("./app/static/example_data/nowatch{ifelse(rv$aggregated, '-agg', '')}_small"))){
+                 hide("btn_use_example_data_small")
+               }
              }
-             if(!file.exists("./app/static/example_data/e4_small.zip")){
-               hide("btn_use_example_data_small")
-             }
-           },
-           `embrace-plus` = {
-             if(!file.exists(glue("./app/static/example_data/embrace-plus{ifelse(aggregated, '-agg', '')}_large.zip")) & 
-                !dir.exists(glue("./app/static/example_data/embrace-plus{ifelse(aggregated, '-agg', '')}_large"))) {
-               hide("btn_use_example_data_large")
-             }
-             if(!file.exists(glue("./app/static/example_data/embrace-plus{ifelse(aggregated, '-agg', '')}_small.zip")) & 
-                !dir.exists(glue("./app/static/example_data/embrace-plus{ifelse(aggregated, '-agg', '')}_small"))){
-               hide("btn_use_example_data_small")
-             }
-           },
-           nowatch = {
-             if(!file.exists(glue("./app/static/example_data/nowatch{ifelse(aggregated, '-agg', '')}_large.zip")) & 
-                !dir.exists(glue("./app/static/example_data/nowatch{ifelse(aggregated, '-agg', '')}_large"))){
-               hide("btn_use_example_data_large")
-             }
-             if(!file.exists(glue("./app/static/example_data/nowatch{ifelse(aggregated, '-agg', '')}_small.zip")) & 
-                !dir.exists(glue("./app/static/example_data/nowatch{ifelse(aggregated, '-agg', '')}_small"))){
-               hide("btn_use_example_data_small")
-             }
-           }
-    )
+      )
+    })
     
     observe({
       
@@ -197,14 +212,16 @@ server <- function(id, device) {
     
     observe({
       
+      disable("btn_use_example_data_large")
+      
       if (device %in% c("embrace-plus", "nowatch")) {
-        rv$folder <- glue("./app/static/example_data/{device}{ifelse(aggregated, '-agg', '')}_large")
+        rv$folder <- glue("./app/static/example_data/{device}{ifelse(rv$aggregated, '-agg', '')}_large")
       } else {
         rv$zip_files <- data.frame(
           name = glue("{device}_large.zip"),
           size = NA,
           type = "application/x-zip-compressed",
-          datapath = glue("./app/static/example_data/{device}{ifelse(aggregated, '-agg', '')}_large.zip")
+          datapath = glue("./app/static/example_data/{device}{ifelse(rv$aggregated, '-agg', '')}_large.zip")
         )
       }
       
@@ -212,14 +229,16 @@ server <- function(id, device) {
     
     observe({
       
+      disable("btn_use_example_data_small")
+      
       if (device %in% c("embrace-plus", "nowatch")) {
-        rv$folder <- glue("./app/static/example_data/{device}{ifelse(aggregated, '-agg', '')}_small")
+        rv$folder <- glue("./app/static/example_data/{device}{ifelse(rv$aggregated, '-agg', '')}_small")
       } else {
         rv$zip_files <- data.frame(
           name = glue("{device}_small.zip"),
           size = NA,
           type = "application/x-zip-compressed",
-          datapath = glue("./app/static/example_data/{device}{ifelse(aggregated, '-agg', '')}_small.zip")
+          datapath = glue("./app/static/example_data/{device}{ifelse(rv$aggregated, '-agg', '')}_small.zip")
         )
       }
       
@@ -252,7 +271,7 @@ server <- function(id, device) {
                    out <- read_e4(fns[i])
                  },
                  `embrace-plus` = {
-                   out <- read_embrace_plus(fns[i])
+                   out <- read_embrace_plus(zipfile = fns[i])
                  })
           
           if(is.null(out)){
@@ -297,6 +316,8 @@ server <- function(id, device) {
           
           hide("div_upload_file")
           show("div_restart_application")
+          enable("btn_use_example_data_small")
+          enable("btn_use_example_data_large")
           
         } else {
           
@@ -307,7 +328,7 @@ server <- function(id, device) {
         
       })
       
-    })
+    }) |> bindEvent(rv$zip_files)
     
     observe({
       
@@ -315,7 +336,7 @@ server <- function(id, device) {
       
       switch(device,
              `embrace-plus` = {
-               out <- read_embrace_plus(folder = rv$folder, type = "aggregated")
+               out <- read_embrace_plus(folder = rv$folder, type = ifelse(rv$aggregated, "aggregated", "raw"))
              },
              nowatch = {
                out <- read_nowatch(folder = rv$folder)
@@ -325,11 +346,20 @@ server <- function(id, device) {
         
         toastr_error("Something went wrong with getting the data - check folder!")
         
+        functions$disable_link(menu = device, name = "Calendar")
+        functions$disable_link(menu = device, name = "Visualization")
+        functions$disable_link(menu = device, name = "Data cutter")
+        
       } else {
         switch(device,
                `embrace-plus` = {
                  rv$data <- out
-                 rv$data_agg <- aggregate_embrace_plus_data(rv$data)
+                 if (rv$aggregated) {
+                   rv$data_agg <- aggregate_embrace_plus_data(rv$data)
+                 } else {
+                   rv$data <- rbind_embrace_plus(rv$data)
+                   rv$data_agg <- aggregate_embrace_plus_data(rv$data)
+                 }
                },
                nowatch = {
                  rv$data <- out
@@ -347,8 +377,10 @@ server <- function(id, device) {
         
         hide("div_upload_file")
         show("div_restart_application")
+        enable("btn_use_example_data_small")
+        enable("btn_use_example_data_large")
       } 
-    })
+    }) |> bindEvent(rv$folder)
     
     output$msg_data_read <- renderUI({
       
