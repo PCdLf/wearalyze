@@ -11,7 +11,8 @@ box::use(
         updateActionButton],
   shinycssloaders[withSpinner],
   shinyjs[hide, show],
-  shinytoastr[toastr_info, toastr_success]
+  shinytoastr[toastr_info, toastr_success],
+  stats[runif]
 )
 
 box::use(
@@ -118,19 +119,22 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL), device,
     y_hr <- visSeriesOptions$server("hr")
     y_temp <- visSeriesOptions$server("temp")
     
-    observe({
-      req(r$type)
-      type <- r$type
-      r$y_move <- visSeriesOptions$server("move", 
-                                        selected = "custom", 
-                                        custom_y = constants$app_config$visualisation$move[[device]][[type]]$custom_y)
-    })
-    
     # Functionality ---------------------------------
     output$ui_move <- renderUI({
       ns <- session$ns
       type <- r$type
-      visSeriesOptions$ui(ns("move"), y_range = constants$app_config$visualisation$move[[device]][[type]]$yrange)
+      r$load_move <- runif(1)
+      visSeriesOptions$ui(ns("move"),
+                          y_range = as.numeric(constants$app_config$visualisation$move[[device]][[type]]$yrange))
+    })
+    
+    observe({
+      req(r$type)
+      req(r$load_move)
+      type <- r$type
+      r$y_move <- visSeriesOptions$server("move", 
+                                          selected = "custom", 
+                                          custom_y = constants$app_config$visualisation$move[[device]][[type]]$custom_y)
     })
     
     observe({
