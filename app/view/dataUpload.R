@@ -120,7 +120,7 @@ ui <- function(id, device) {
   )
 }
 
-server <- function(id, device) {
+server <- function(id, device, r) {
   moduleServer(id, function(input, output, session) {
   
     # Reactive values -------------------------------
@@ -138,6 +138,12 @@ server <- function(id, device) {
     observe({
       if (device == "embrace-plus") {
         rv$aggregated <- input$use_aggregated
+        
+        if (input$use_aggregated) {
+          r$type <- "aggregated"
+        } else {
+          r$type <- "raw"
+        }
       }
     })
     

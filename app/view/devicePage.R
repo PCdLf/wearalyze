@@ -1,7 +1,7 @@
 
 box::use(
   bslib[nav_menu, nav_panel],
-  shiny[icon, moduleServer, NS]
+  shiny[icon, moduleServer, NS, reactiveValues]
 )
 
 box::use(
@@ -11,7 +11,8 @@ box::use(
   app/view/analysis,
   app/view/cutData,
   app/view/batch,
-  app/logic/functions
+  app/logic/functions,
+  app/logic/constants
 )
 
 ui <- function(id, device){
@@ -59,9 +60,16 @@ server <- function(id, device) {
     
     device <- tolower(gsub(" ", "-", device))
     
+    # reactive values -------------------------------
+    r <- reactiveValues(
+      device = NULL,
+      type = ifelse(constants$device_config[[device]]$aggregated, "aggregated", "raw"), 
+    )
+    
     # Modules ---------------------------------------
     data_in <- dataUpload$server(id = paste0(device, "-data"), 
-                                 device = device)
+                                 device = device,
+                                 r = r)
     
     calendar <- calendar$server(id = paste0(device, "-calendar"),
                                 device = device)
@@ -69,7 +77,8 @@ server <- function(id, device) {
     visualization <- visualization$server(id = paste0(device, "-visualization"),
                                           data = data_in,
                                           device = device,
-                                          calendar = calendar)
+                                          calendar = calendar,
+                                          r = r)
     
     analysis$server(id = paste0(device, "-analysis"),
                     data = data_in,

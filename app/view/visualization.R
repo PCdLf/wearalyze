@@ -74,7 +74,7 @@ ui <- function(id) {
                  
                  tags$div(id = ns("move_options"),
                           tags$h4("MOVE"),
-                          visSeriesOptions$ui(ns("move"), y_range = constants$app_config$visualisation$move$yrange))
+                          uiOutput(ns("ui_move")))
           )
         )
         
@@ -106,7 +106,7 @@ ui <- function(id) {
   
 }
 
-server <- function(id, data = reactive(NULL), calendar = reactive(NULL), device) {
+server <- function(id, data = reactive(NULL), calendar = reactive(NULL), device, r) {
   moduleServer(id, function(input, output, session) {
     
     # Reactive values -------------------------------
@@ -117,9 +117,22 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL), device)
     y_eda <- visSeriesOptions$server("eda")
     y_hr <- visSeriesOptions$server("hr")
     y_temp <- visSeriesOptions$server("temp")
-    y_move <- visSeriesOptions$server("move", selected = "custom", custom_y = constants$app_config$visualisation$move$custom_y)
+    
+    observe({
+      req(r$type)
+      type <- r$type
+      r$y_move <- visSeriesOptions$server("move", 
+                                        selected = "custom", 
+                                        custom_y = constants$app_config$visualisation$move[[device]][[type]]$custom_y)
+    })
     
     # Functionality ---------------------------------
+    output$ui_move <- renderUI({
+      ns <- session$ns
+      type <- r$type
+      visSeriesOptions$ui(ns("move"), y_range = constants$app_config$visualisation$move[[device]][[type]]$yrange)
+    })
+    
     observe({
       req(data()$data)
       
@@ -142,7 +155,7 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL), device)
         EDA = y_eda(),
         HR = y_hr(),
         TEMP = y_temp(),
-        MOVE = y_move()
+        MOVE = r$y_move()
       )
     )
     

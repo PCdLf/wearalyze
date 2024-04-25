@@ -9,7 +9,23 @@ visualisation:
     yrange: [24, 38]
     color: "#458B00"
   move:
-    yrange: [0.98, 1.25]
-    color: "#68228B"
-    custom_y: 1.07
+    e4:
+      raw:
+        yrange: [0.98, 1.25]
+        color: "#68228B"
+        custom_y: 1.07
+    embrace-plus:
+      raw:
+        yrange: [0.98, 1.25]
+        color: "#68228B"
+        custom_y: 0.5
+      aggregated:
+        yrange: [0, 0.7]
+        color: "#68228B"
+        custom_y: 0.5
+    nowatch:
+      aggregated:
+        yrange: [0.98, 1.25]
+        color: "#68228B"
+        custom_y: 0.5
   default_color: "blue"
