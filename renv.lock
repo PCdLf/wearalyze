@@ -2220,14 +2220,14 @@
     },
     "wearables": {
       "Package": "wearables",
-      "Version": "0.10.0",
+      "Version": "0.11.0",
       "Source": "GitHub",
       "RemoteType": "github",
       "RemoteHost": "api.github.com",
       "RemoteRepo": "wearables",
       "RemoteUsername": "PCdLf",
       "RemoteRef": "HEAD",
-      "RemoteSha": "84bae2fa899f3e6e4344bf9f256f6f332172eaca",
+      "RemoteSha": "434e056fd4d58b7fc8010ecfd29145612e4760cb",
       "Requirements": [
         "R",
         "R.utils",
@@ -2247,7 +2247,7 @@
         "waveslim",
         "xts"
       ],
-      "Hash": "05593d7ec03c1ef855e2da74b2dfd648"
+      "Hash": "2b2aa7aa059b5240e6a470a9f2ef1952"
     },
     "webshot": {
       "Package": "webshot",
