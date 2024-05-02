@@ -106,6 +106,28 @@ validate_calendar <- function(data){
   
 }
 
+read_problemtarget<- function(fn){
+  
+  ext <- tolower(file_ext(fn))
+  
+  switch(ext,
+         xls = read_excel(fn),
+         xlsx = read_excel(fn),
+         txt = read.csv2(fn)
+  ) |>
+    as_tibble() |>
+    mutate(Date = as.Date(Date))
+  
+}
+
+validate_problemtarget <- function(data){
+  
+  nms <- c("Date" ,"Problem or Target Behavior", "Score")
+  
+  all(nms %in% names(data))
+  
+}
+
 calendar_add_color <- function(data, app_config){
   
   if(!"Color" %in% names(data)){

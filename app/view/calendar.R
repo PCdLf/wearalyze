@@ -59,7 +59,6 @@ ui <- function(id){
                )           
            )
          )
-         
     ),
     uiOutput(ns("ui_problemtarget_block"))
   )
@@ -74,6 +73,8 @@ server <- function(id, device, r) {
     
     calendar_out <- reactiveVal()
     calendar_file <- reactiveVal()
+    problemtarget_out <- reactiveVal()
+    problemtarget_file <- reactiveVal()
     
     helpButton$server("help", helptext = constants$help_config$calendar)
     
@@ -185,6 +186,15 @@ server <- function(id, device, r) {
                 div(style = "padding-left: 50px; padding-top: 25px;",
                     buttons
                 )
+              ),
+              br(),
+              hidden(
+                div(id = ns("problemtarget_block"),
+                    h4("Problem or Target Behavior data"),
+                    withSpinner(
+                      dataTableOutput(ns("dt_problemtarget"))
+                    )           
+                )
               )
           )
         )
@@ -197,7 +207,63 @@ server <- function(id, device, r) {
         helpButton$server("help2", helptext = constants$help_config$problemtarget)
       }
       
-    }) 
+    })
+    
+    observe({
+      problemtarget_file(
+        data.frame(
+          name = glue("{device}_problemtarget_large.xlsx"),
+          size = NA,
+          type = NA,
+          datapath = glue("./app/static/example_data/{device}_problemtarget_large.xlsx")
+        )
+      )
+    }) |> bindEvent(input$btn_use_example_problemtarget_large)
+    
+    observe({
+      problemtarget_file(
+        data.frame(
+          name = glue("{device}_problemtarget_small.xlsx"),
+          size = NA,
+          type = NA,
+          datapath = glue("./app/static/example_data/{device}_problemtarget_small.xlsx")
+        )
+      )
+    }) |> bindEvent(input$btn_use_example_problemtarget_small)
+    
+    observe({
+      problemtarget_file(input$select_problemtarget_file)
+    })
+    
+    observe({
+      
+      req(problemtarget_file())
+      
+      data <- functions$read_problemtarget(problemtarget_file()$datapath)
+      
+      if(!functions$validate_problemtarget(data)){
+        toastr_error("Problem or Target Behavior data must have columns Date, Problem or Target Behavior, Score, click Help!")
+      } else {
+        
+        problemtarget_out(
+          data
+        )
+        
+        hide("problemtarget_in_block")
+        show("problemtarget_block")  
+      }
+      
+    })
+    
+    output$dt_problemtarget <- renderDataTable({
+      
+      req(problemtarget_out())
+      
+      problemtarget_out() |>
+        mutate(Date = format(Date, "%Y-%m-%d")) |>
+        datatable(selection = "none")
+      
+    })
     
     return(calendar_out)
     
