@@ -101,7 +101,14 @@ calendar: >
   </table>
   </body>
   </html>
-  
+
+problemtarget: >
+  Select a Problem or Target behavior file here. This file is an XLSX file that contains a table with three columns.<br>
+  The column names are used by the application, so make sure to name them accordingly, and also use the correct date and time format.<br>
+  <br>
+  1. <strong>Date:</strong> a day-month-year variable  ("dd-mm-yyyy" format). <br>
+  2. <strong>Problem or Target Behavior:</strong> Text variable that describes the problem or target behavior.<br>
+  3. <strong>Score:</strong> A numerical variable that describes the severity of the problem or target behavior.<br>
   
 visualization: > 
   The Visualization tab has a Settings tab and a Plot tab (which is hidden).<br>

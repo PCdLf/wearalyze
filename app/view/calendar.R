@@ -5,7 +5,7 @@ box::use(
   DT[datatable, dataTableOutput, renderDataTable],
   glue[glue],
   shiny[actionButton, bindEvent, br, div, fileInput,  h4, icon, moduleServer,
-        NS, observe, p, reactiveVal, req, tagList],
+        NS, observe, p, reactiveVal, renderUI, req, tagList, uiOutput],
   shinycssloaders[withSpinner],
   shinyjs[hide, hidden, show],
   shinytoastr[toastr_error]
@@ -60,7 +60,8 @@ ui <- function(id){
            )
          )
          
-    )
+    ),
+    uiOutput(ns("ui_problemtarget_block"))
   )
   
   
@@ -76,33 +77,12 @@ server <- function(id, device, r) {
     
     helpButton$server("help", helptext = constants$help_config$calendar)
     
-    # check if _small or _large files are available for device
-    switch(device,
-           e4 = {
-             if(!file.exists("./app/static/example_data/e4_calendar_large.xlsx")){
-               hide("btn_use_example_data_large")
-             }
-             if(!file.exists("./app/static/example_data/e4_calendar_small.xlsx")){
-               hide("btn_use_example_data_small")
-             }
-           },
-           `embrace-plus` = {
-             if(!file.exists(glue("./app/static/example_data/embrace-plus_calendar_large.xlsx"))){
-               hide("btn_use_example_data_large")
-             }
-             if(!file.exists("./app/static/example_data/embrace-plus_calendar_small.xlsx")){
-               hide("btn_use_example_data_small")
-             }
-           },
-           nowatch = {
-             if(!file.exists("./app/static/example_data/nowatch_calendar_large.xlsx")){
-               hide("btn_use_example_data_large")
-             }
-             if(!file.exists("./app/static/example_data/nowatch_calendar_small.xlsx")){
-               hide("btn_use_example_data_small")
-             }
-           }
-    )
+    if(!file.exists(glue("./app/static/example_data/{device}_calendar_large.xlsx"))){
+      hide("btn_use_example_data_large")
+    }
+    if(!file.exists(glue("./app/static/example_data/{device}_calendar_small.xlsx"))){
+      hide("btn_use_example_data_small")
+    }
     
     observe({
       calendar_file(
@@ -164,6 +144,60 @@ server <- function(id, device, r) {
         datatable(selection = "none")
       
     })
+    
+    output$ui_problemtarget_block <- renderUI({
+      
+      ns <- session$ns
+      
+      if (r$more_than_24h == TRUE) {
+        
+        buttons <- c()
+        
+        if (file.exists(glue("./app/static/example_data/{device}_problemtarget_large.xlsx"))) {
+          buttons <- tagList(buttons, 
+                             actionButton(ns("btn_use_example_problemtarget_large"), "Use large example data", 
+                                          icon = icon("male"), class = "btn-info"))
+        }
+        
+        if (file.exists(glue("./app/static/example_data/{device}_problemtarget_small.xlsx"))) {
+          buttons <- tagList(buttons, 
+                             actionButton(ns("btn_use_example_problemtarget_small"), "Use small example data", 
+                                          icon = icon("child"), class = "btn-info"))
+        }
+        
+        card(
+          card_header("Problem or Target Behavior"),
+          div(style = "width: 100%;",
+              div(style = "float: right;",
+                  helpButton$ui(ns("help2"))
+              )
+          ),
+          div(id = "problemtarget_in_block",
+              p("The selected device has a recording interval of more than 24 hours."),
+              p("Please upload an Excel file with the Problem or Target behavior data."),
+              functions$side_by_side(
+                fileInput(ns("select_problemtarget_file"),
+                          label = "Choose Problem or Target Behavior (XLS/XLSX/TXT) file", 
+                          multiple = FALSE, 
+                          accept = c(".xls",".xlsx", ".txt"),
+                          width = 450,
+                          buttonLabel = "Browse..."),
+                div(style = "padding-left: 50px; padding-top: 25px;",
+                    buttons
+                )
+              )
+          )
+        )
+      }
+    })
+    
+    observe({
+      
+      if (r$more_than_24h == TRUE) {
+        helpButton$server("help2", helptext = constants$help_config$problemtarget)
+      }
+      
+    }) 
     
     return(calendar_out)
     

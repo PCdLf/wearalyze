@@ -63,7 +63,8 @@ server <- function(id, device) {
     # reactive values -------------------------------
     r <- reactiveValues(
       device = NULL,
-      type = ifelse(constants$device_config[[device]]$aggregated, "aggregated", "raw"), 
+      type = ifelse(constants$device_config[[device]]$aggregated, "aggregated", "raw"),
+      more_than_24h = FALSE
     )
     
     # Modules ---------------------------------------
@@ -72,7 +73,8 @@ server <- function(id, device) {
                                  r = r)
     
     calendar <- calendar$server(id = paste0(device, "-calendar"),
-                                device = device)
+                                device = device,
+                                r = r)
     
     visualization <- visualization$server(id = paste0(device, "-visualization"),
                                           data = data_in,

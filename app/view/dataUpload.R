@@ -221,13 +221,13 @@ server <- function(id, device, r) {
       disable("btn_use_example_data_large")
       
       if (device %in% c("embrace-plus", "nowatch")) {
-        rv$folder <- glue("./app/static/example_data/{device}{ifelse(rv$aggregated, '-agg', '')}_large")
+        rv$folder <- glue("./app/static/example_data/{device}_large")
       } else {
         rv$zip_files <- data.frame(
           name = glue("{device}_large.zip"),
           size = NA,
           type = "application/x-zip-compressed",
-          datapath = glue("./app/static/example_data/{device}{ifelse(rv$aggregated, '-agg', '')}_large.zip")
+          datapath = glue("./app/static/example_data/{device}_large.zip")
         )
       }
       
@@ -371,6 +371,11 @@ server <- function(id, device, r) {
                  rv$data <- out
                  rv$data_agg <- aggregate_nowatch_data(rv$data)
                })
+        
+        # Get min and max date, and determine whether or not there's more than 24 hours
+        min_date <- min(rv$data_agg$EDA$DateTime)
+        max_date <- max(rv$data_agg$EDA$DateTime)
+        r$more_than_24h <- difftime(max_date, min_date, units = "hours") > 24
         
         rv$newdata <- runif(1)
         
