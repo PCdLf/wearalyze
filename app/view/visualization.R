@@ -8,7 +8,7 @@ box::use(
   shiny[actionButton, bindEvent, br, checkboxInput, column, fluidRow, hr, 
         icon, isTruthy, moduleServer, NS, observe, radioButtons,
         reactive, reactiveVal, renderUI, req, tagList, tags, textInput, uiOutput,
-        updateActionButton],
+        updateActionButton, p],
   shinycssloaders[withSpinner],
   shinyjs[hide, show],
   shinytoastr[toastr_info, toastr_success],
