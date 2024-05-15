@@ -79,7 +79,8 @@ server <- function(id, device) {
     visualization <- visualization$server(id = paste0(device, "-visualization"),
                                           data = data_in,
                                           device = device,
-                                          calendar = calendar,
+                                          calendar = calendar$calendar,
+                                          problemtarget = calendar$problemtarget,
                                           r = r)
     
     analysis$server(id = paste0(device, "-analysis"),

@@ -95,6 +95,13 @@ ui <- function(id) {
       ),
       
       nav_panel(
+        title = "Problem/Target Relationship",
+        icon = icon("chart-bar"),
+        value = "plottab2",
+        dygraphOutput(ns("dygraph_problemtarget"), height = "100%")
+      ),
+      
+      nav_panel(
         title = "Annotations",
         icon = icon("list-ol"),
         value = "plotannotations",
@@ -108,7 +115,8 @@ ui <- function(id) {
   
 }
 
-server <- function(id, data = reactive(NULL), calendar = reactive(NULL), device, r) {
+server <- function(id, data = reactive(NULL), calendar = reactive(NULL), 
+                   device, r, problemtarget = reactive(NULL)) {
   moduleServer(id, function(input, output, session) {
     
     # Reactive values -------------------------------
@@ -152,6 +160,7 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL), device,
     })
     
     functions$hide_tab("plottab")
+    functions$hide_tab("plottab2")
     functions$hide_tab("plotannotations")
     
     # Collect submodule output in a single reactive
@@ -266,6 +275,24 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL), device,
       }
       
     }) |> bindEvent(input$btn_make_plot)
+    
+    observe({
+      
+      data <- data()
+      
+      req(data$data)
+      req(problemtarget())
+      
+      browser()
+      
+      functions$show_tab("plottab2")
+      
+      output$dygraph_problemtarget <- renderDygraph({})
+      
+      updateActionButton(session, "btn_make_plot", label = "Update plot", icon = icon("sync"))
+      
+    }) |> bindEvent(input$btn_make_plot)
+    
     
     current_visible_annotations <- reactive({
       

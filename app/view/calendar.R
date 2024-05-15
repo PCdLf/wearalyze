@@ -265,7 +265,12 @@ server <- function(id, device, r) {
       
     })
     
-    return(calendar_out)
+    return(
+      list(
+        calendar = calendar_out,
+        problemtarget = problemtarget_out
+      )
+    )
     
   })
 }
