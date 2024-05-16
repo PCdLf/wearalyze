@@ -13,7 +13,7 @@ box::use(
 
 # Utility function to make 4 timeseries based on a dataset
 # this timeseries is used in timeseries_plot
-make_timeseries <- function(data){
+make_timeseries <- function(data, type = "aggregated"){
   
   # remove unix_timestamp column from data
   data <- lapply(data, function(x) {
@@ -32,8 +32,12 @@ make_timeseries <- function(data){
   if ("ACC" %in% names(data)){
     MOVE_timeseries <- as_timeseries(data$ACC, index = which(names(data$ACC) == "a"), name_col = "Movement")
   } else if ("MOVE" %in% names(data)){
-    # For embraceplus data this is accelerometer_std_g (index 3)
-    MOVE_timeseries <- as_timeseries(data$MOVE, index = 3, name_col = "Movement")
+    if (type == "aggregated") {
+      # For embraceplus data this is accelerometer_std_g (index 3)
+      MOVE_timeseries <- as_timeseries(data$MOVE, index = 3, name_col = "Movement")
+    } else if (type == "raw") {
+      MOVE_timeseries <- as_timeseries(data$MOVE, index = which(names(data$MOVE) == "a"), name_col = "Movement")
+    }
   } else {
     MOVE_timeseries <- as_timeseries(data.frame(DateTime = data$EDA$DateTime, Movement = NA), name_col = "Movement")
   }

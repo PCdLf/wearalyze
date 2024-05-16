@@ -20,7 +20,7 @@ visualisation:
         color: "#68228B"
         custom_y: 0.5
       aggregated:
-        yrange: [0, 0.7]
+        yrange: [0.98, 1.25]
         color: "#68228B"
         custom_y: 0.5
     nowatch:
