@@ -2,9 +2,15 @@
 box::use(
   bslib[navset_tab, nav_panel, nav_select, card, card_header],
   DT[datatable, DTOutput, renderDT],
-  dplyr[filter, mutate],
+  dplyr[filter, group_by, join_by, left_join, mutate, summarise, ungroup],
   dygraphs[dygraphOutput, renderDygraph],
+  echarts4r[e_bar, e_charts, e_data, e_flip_coords, e_grid, e_heatmap, 
+            e_line, e_visual_map,
+            e_x_axis, e_y_axis, e_title,
+            echarts4rOutput, renderEcharts4r],
+  htmlwidgets[JS],
   lubridate[ymd_hms],
+  scales[rescale],
   shiny[actionButton, bindEvent, br, checkboxInput, column, fluidRow, hr, 
         icon, isTruthy, moduleServer, NS, observe, radioButtons,
         reactive, reactiveVal, renderUI, req, tagList, tags, textInput, uiOutput,
@@ -82,7 +88,7 @@ ui <- function(id) {
       ),
       
       nav_panel(
-        title = "Plot",
+        title = "Daily",
         icon = icon("chart-bar"),
         value = "plottab",
         withSpinner(
@@ -95,10 +101,20 @@ ui <- function(id) {
       ),
       
       nav_panel(
-        title = "Problem/Target Relationship",
+        title = "Target Behaviour",
         icon = icon("chart-bar"),
         value = "plottab2",
-        dygraphOutput(ns("dygraph_problemtarget"), height = "100%")
+        fluidRow(
+          column(4,
+                 echarts4rOutput(ns("echarts_problemtarget1")),
+          ),
+          column(4,
+                 echarts4rOutput(ns("echarts_problemtarget2"))
+          ),
+          column(4,
+                 echarts4rOutput(ns("echarts_problemtarget3"))
+          )
+        )
       ),
       
       nav_panel(
@@ -133,8 +149,15 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
       ns <- session$ns
       type <- r$type
       r$load_move <- runif(1)
+      
+      if (r$type == "aggregated" && device == "embrace-plus") {
+        y_range <- c(0, 0.7)
+      } else {
+        y_range <- as.numeric(constants$app_config$visualisation$move[[device]][[type]]$yrange)
+      }
+      
       visSeriesOptions$ui(ns("move"),
-                          y_range = as.numeric(constants$app_config$visualisation$move[[device]][[type]]$yrange))
+                          y_range = y_range)
     })
     
     observe({
@@ -229,9 +252,9 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
       }
       
       if (agg == "Yes") {
-        timeseries <- functions_devices$make_timeseries(data$data_agg)
+        timeseries <- functions_devices$make_timeseries(data$data_agg, r$type)
       } else {
-        timeseries <- functions_devices$make_timeseries(data$data)
+        timeseries <- functions_devices$make_timeseries(data$data, r$type)
       }
       
       functions$show_tab("plottab")
@@ -283,11 +306,92 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
       req(data$data)
       req(problemtarget())
       
-      browser()
-      
       functions$show_tab("plottab2")
       
-      output$dygraph_problemtarget <- renderDygraph({})
+      # Group move data by 1 hour
+      df <- data$data$MOVE |>
+        mutate(active = ifelse(!is.na(activity_counts) & activity_counts > 0, 1, 0)) |>
+        group_by(DateTime = lubridate::floor_date(DateTime, "1 hour")) |>
+        summarise(
+          activity_level = sum(activity_counts, na.rm = TRUE),
+          activity_time = sum(active, na.rm = TRUE),
+          .groups = "drop"
+        ) |>
+        mutate(hour = as.numeric(format(DateTime, "%H")),
+               hour = ifelse(hour < 12, paste0(hour, "am"), paste0(hour, "pm")),
+               date = as.Date(DateTime)) |>
+        # scale activity level as number between 0 and 10
+        mutate(activity_level = round(scales::rescale(activity_level, to = c(0, 10)))) |>
+        # merge problemtarget() data based on Date
+        left_join(problemtarget(), by = join_by(date == Date))
+      
+      # Calculate weekly average of activity time
+      week_data <- df |>
+        group_by(date) |>
+        mutate(activity_time = sum(activity_time, na.rm = TRUE)) |>
+        ungroup() |>
+        mutate(week = format(DateTime, "%W")) |>
+        group_by(week) |>
+        summarise(weekly_activity_time = mean(activity_time),
+                  date = max(date))
+      
+      yearMonthDate <- htmlwidgets::JS('function (value) {
+        var d = new Date(value);
+        var datestring = d.getFullYear() + "-" + ("0"+(d.getMonth()+1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2)
+        return datestring
+      }')
+      
+      output$echarts_problemtarget1 <- renderEcharts4r({
+        df |>
+          e_charts(hour) |>
+          e_heatmap(date, activity_level, label = list(show = TRUE)) |>
+          e_y_axis(name = "Date") |>
+          e_title("Activity Level") |>
+          e_visual_map(activity_level,
+                       orient = "horizontal") |>
+          e_grid(left = 70)
+      })
+      
+      output$echarts_problemtarget2 <- renderEcharts4r({
+        df |>
+          group_by(date) |>
+          summarise(activity_time = sum(activity_time, na.rm = TRUE)) |>
+          e_charts(date) |>
+          e_bar(activity_time) |>
+          e_data(week_data) |>
+          e_line(weekly_activity_time) |>
+          e_y_axis(name = "Minutes") |>
+          e_x_axis(
+            axisPointer = list(show = TRUE),
+            axisLabel = list(
+              formatter = yearMonthDate
+            )
+          ) |>
+          e_title("Activity Time") |>
+          e_flip_coords() |>
+          e_grid(left = 70)
+      })
+      
+      output$echarts_problemtarget3 <- renderEcharts4r({
+        
+        title <- df$`Problem or Target Behavior` |> unique()
+        
+        df |>
+          group_by(date) |>
+          summarise(score = mean(Score, na.rm = TRUE)) |>
+          e_charts(date) |>
+          e_line(score) |>
+          e_y_axis(name = "Score") |>
+          e_x_axis(
+            axisPointer = list(show = TRUE),
+            axisLabel = list(
+              formatter = yearMonthDate
+            )
+          ) |>
+          e_title(paste(title, "Score")) |>
+          e_flip_coords() |>
+          e_grid(left = 70)
+      })
       
       updateActionButton(session, "btn_make_plot", label = "Update plot", icon = icon("sync"))
       
@@ -316,6 +420,11 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
         p("Note: the Embrace Plus device does not have HR per second 
           available when data is in raw format. The aggregated HR is available
           from the digital biomarkers and the BVP signal is available from the raw data.")
+      } else if (device == "embrace-plus" && r$type == "aggregated") {
+        p("Note: the aggregated data of the Embrace Plus device uses 
+          the standard deviation of the accelerometer readings in terms of gravitational force (g) 
+          as a proxy for movement. This differs from the
+          raw data, that uses the geometric mean acceleration.")
       }
     })
     
