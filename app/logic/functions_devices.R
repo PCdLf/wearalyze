@@ -199,13 +199,20 @@ timeseries_plot <- function(data,
 }
 
 create_echarts4r_events <- function(chart, annotatedata, yrange, label = TRUE) {
+
   # Create events from calendar data
   if (!is.null(annotatedata)) {
     for (i in 1:nrow(annotatedata)) {
+      
+      if (label) {
+        title <- annotatedata$Text[i]
+      } else {
+        title <- ""
+      }
+      
       chart <- chart |>
         e_mark_line(data = list(xAxis = annotatedata$Start[i]),
-                    title = annotatedata$Text[i],
-                    label = list(normal = list(show = label)))
+                    title = title)
     }
     for (i in 1:nrow(annotatedata)) {
       chart <- chart |>
