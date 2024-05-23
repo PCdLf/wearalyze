@@ -91,7 +91,7 @@ ui <- function(id) {
       nav_panel(
         title = "Daily",
         icon = icon("chart-bar"),
-        value = "plottab",
+        value = ns("plottab"),
         withSpinner(
           echarts4rOutput(ns("daily_graphs1"), height = "300px"),
         ),
@@ -109,7 +109,7 @@ ui <- function(id) {
       nav_panel(
         title = "Target Behaviour",
         icon = icon("chart-bar"),
-        value = "plottab2",
+        value = ns("plottab2"),
         fluidRow(
           column(4,
                  echarts4rOutput(ns("echarts_problemtarget1")),
@@ -126,7 +126,7 @@ ui <- function(id) {
       nav_panel(
         title = "Annotations",
         icon = icon("list-ol"),
-        value = "plotannotations",
+        value = ns("plotannotations"),
         tags$br(),
         tags$h5("Annotations (selected time window)"),
         DTOutput(ns("dt_annotations_visible"))
@@ -188,9 +188,9 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
       
     })
     
-    functions$hide_tab("plottab")
-    functions$hide_tab("plottab2")
-    functions$hide_tab("plotannotations")
+    functions$hide_tab(session$ns("plottab"))
+    functions$hide_tab(session$ns("plottab2"))
+    functions$hide_tab(session$ns("plotannotations"))
     
     # Collect submodule output in a single reactive
     series_options <- reactive(
@@ -263,14 +263,14 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
         data <- data$data
       }
       
-      functions$show_tab("plottab")
+      functions$show_tab(session$ns("plottab"))
       
       if (isTruthy(calendar())) {
-        functions$show_tab("plotannotations")
+        functions$show_tab(session$ns("plotannotations"))
       }
       
       nav_select(id = "tabs", 
-                 selected = "plottab")
+                 selected = session$ns("plottab"))
       
       if(input$check_add_calendar_annotation){
         annotatedata <- calendar()
@@ -532,7 +532,7 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
       req(data)
       req(problemtarget())
       
-      functions$show_tab("plottab2")
+      functions$show_tab(session$ns("plottab2"))
       
       # Group move data by 1 hour
       df <- data$MOVE |>
