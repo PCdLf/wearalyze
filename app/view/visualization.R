@@ -4,11 +4,12 @@ box::use(
   DT[datatable, DTOutput, renderDT],
   dplyr[filter, group_by, join_by, left_join, mutate, summarise, ungroup],
   dygraphs[dygraphOutput, renderDygraph],
-  echarts4r[e_bar, e_charts, e_data, e_flip_coords, e_grid, e_heatmap, 
-            e_line, e_visual_map,
-            e_x_axis, e_y_axis, e_title,
+  echarts4r[e_bar, e_charts, e_connect_group, e_data, e_datazoom, 
+            e_flip_coords, e_grid, e_group, e_heatmap, 
+            e_legend, e_line, e_mark_area, e_mark_line, e_visual_map,
+            e_x_axis, e_y_axis, e_title, e_tooltip,
             echarts4rOutput, renderEcharts4r],
-  htmlwidgets[JS],
+  htmlwidgets[JS, onRender],
   lubridate[ymd_hms],
   scales[rescale],
   shiny[actionButton, bindEvent, br, checkboxInput, column, fluidRow, hr, 
@@ -92,11 +93,16 @@ ui <- function(id) {
         icon = icon("chart-bar"),
         value = "plottab",
         withSpinner(
-          dygraphOutput(ns("dygraph_current_data1"), height = "140px")
+          echarts4rOutput(ns("daily_graphs1"), height = "300px"),
         ),
-        dygraphOutput(ns("dygraph_current_data2"), height = "140px"),
-        dygraphOutput(ns("dygraph_current_data3"), height = "140px"),
-        dygraphOutput(ns("dygraph_current_data4"), height = "140px"),
+        echarts4rOutput(ns("daily_graphs2"), height = "300px"),
+        echarts4rOutput(ns("daily_graphs3"), height = "300px"),
+        echarts4rOutput(ns("daily_graphs4"), height = "300px"),
+        #dygraphOutput(ns("dygraph_current_data1"), height = "140px")
+        # ),
+        # dygraphOutput(ns("dygraph_current_data2"), height = "140px"),
+        # dygraphOutput(ns("dygraph_current_data3"), height = "140px"),
+        # dygraphOutput(ns("dygraph_current_data4"), height = "140px"),
         uiOutput(ns("dygraph_notes"))
       ),
       
@@ -240,7 +246,7 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
       
       data <- data()
       
-      req(data$data)
+      req(data)
       
       toastr_info("Plot construction started...")
       
@@ -252,9 +258,9 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
       }
       
       if (agg == "Yes") {
-        timeseries <- functions_devices$make_timeseries(data$data_agg, r$type)
+        data <- data$data_agg
       } else {
-        timeseries <- functions_devices$make_timeseries(data$data, r$type)
+        data <- data$data
       }
       
       functions$show_tab("plottab")
@@ -272,22 +278,242 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
         annotatedata <- NULL
       }
       
-      plots <- functions_devices$timeseries_plot(timeseries,
-                                                 main_title = input$txt_plot_main_title,
-                                                 calendar_data = annotatedata,
-                                                 plot_tags = isTRUE(input$rad_plot_tags == "Yes"),
-                                                 tags = data$data$tags,
-                                                 series_options = series_options()
-      )
+      if ("ACC" %in% names(data)){
+        data$MOVE <- data$ACC
+        data$MOVE$MOVE <- data$MOVE$a
+      } else if ("MOVE" %in% names(data)){
+        if (r$type == "aggregated") {
+          # For embraceplus data this is accelerometer_std_g
+          data$MOVE$MOVE <- data$MOVE$accelerometers_std_g
+        } else if (r$type == "raw") {
+          data$MOVE$MOVE <- data$MOVE$a
+        }
+      } else {
+        data$MOVE <- data.frame(data$EDA$DateTime, MOVE = NA)
+      }
       
-      plot_output(
-        plots
-      )
+      yearMonthDate <- JS('function (value) {
+        var d = new Date(value);
+        var datestring = d.getFullYear() + "-" + ("0"+(d.getMonth()+1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2)
+        return datestring
+      }')
       
-      output$dygraph_current_data1 <- renderDygraph(plots[[1]])
-      output$dygraph_current_data2 <- renderDygraph(plots[[2]])
-      output$dygraph_current_data3 <- renderDygraph(plots[[3]])
-      output$dygraph_current_data4 <- renderDygraph(plots[[4]])
+      output$daily_graphs1 <- renderEcharts4r({
+        
+        if (series_options()$EDA$line_type == "mean") {
+          line_val <- mean(data$EDA$EDA, na.rm = TRUE)
+        } else {
+          line_val <- series_options()$EDA$custom_y_val
+        }
+        
+        chart <- data$EDA |>
+          e_charts(DateTime) |>
+          e_line(EDA, 
+                 name = "EDA",
+                 symbol = "none",
+                 lineStyle = list(
+                   width = 1,
+                   color = constants$app_config$visualisation$eda$color
+                 )) |>
+          e_title(input$txt_plot_main_title,
+                  left = "40%") |>
+          e_x_axis(
+            axisPointer = list(show = TRUE),
+            axisLabel = list(
+              formatter = yearMonthDate
+            )
+          ) |>
+          e_y_axis(
+            name = "EDA",
+            nameLocation = "center",
+            nameRotate = 90,
+            nameGap = 30,
+            min = constants$app_config$visualisation$eda$yrange[1],
+            max = constants$app_config$visualisation$eda$yrange[2]
+          ) |>
+          e_datazoom(show = FALSE) |>
+          e_tooltip(trigger = "axis") |>
+          e_legend(show = FALSE) |>
+          e_group("daily") |>
+          e_grid(
+            top = 60,
+            bottom = 20
+          ) |>
+          e_mark_line(data = list(yAxis = line_val), title = line_val)
+        
+        chart <- functions_devices$create_echarts4r_events(chart, 
+                                                           annotatedata, 
+                                                           yrange = constants$app_config$visualisation$eda$yrange)
+        
+        chart
+        
+      })
+      
+      output$daily_graphs2 <- renderEcharts4r({
+        
+        if (series_options()$HR$line_type == "mean") {
+          line_val <- mean(data$HR$HR, na.rm = TRUE)
+        } else {
+          line_val <- series_options()$HR$custom_y_val
+        }
+        
+        chart <- data$HR |>
+          e_charts(DateTime) |>
+          e_line(HR, 
+                 name = "HR",
+                 symbol = "none",
+                 lineStyle = list(
+                   width = 1,
+                   color = constants$app_config$visualisation$hr$color
+                 )) |>
+          e_x_axis(
+            axisPointer = list(show = TRUE),
+            axisLabel = list(
+              formatter = yearMonthDate
+            )
+          ) |>
+          e_y_axis(
+            name = "HR",
+            nameLocation = "center",
+            nameRotate = 90,
+            nameGap = 30,
+            min = constants$app_config$visualisation$hr$yrange[1],
+            max = constants$app_config$visualisation$hr$yrange[2]
+          ) |>
+          e_datazoom(show = FALSE) |>
+          e_tooltip(trigger = "axis") |>
+          e_legend(show = FALSE) |>
+          e_group("daily") |>
+          e_grid(
+            top = 10,
+            bottom = 20
+          ) |>
+          e_mark_line(data = list(yAxis = line_val), title = line_val)
+        
+        chart <- functions_devices$create_echarts4r_events(chart, 
+                                                           annotatedata, 
+                                                           yrange = constants$app_config$visualisation$hr$yrange,
+                                                           label = FALSE)
+        
+        chart
+        
+      })
+      
+      output$daily_graphs3 <- renderEcharts4r({
+        
+        if (series_options()$TEMP$line_type == "mean") {
+          line_val <- mean(data$TEMP$TEMP, na.rm = TRUE)
+        } else {
+          line_val <- series_options()$TEMP$custom_y_val
+        }
+        
+        chart <- data$TEMP |>
+          e_charts(DateTime) |>
+          e_line(TEMP, 
+                 name = "Temperature",
+                 symbol = "none",
+                 lineStyle = list(
+                   width = 1,
+                   color = constants$app_config$visualisation$temp$color
+                 )) |>
+          e_x_axis(
+            axisPointer = list(show = TRUE),
+            axisLabel = list(
+              formatter = yearMonthDate
+            )
+          ) |>
+          e_y_axis(
+            name = "Temperature",
+            nameLocation = "center",
+            nameRotate = 90,
+            nameGap = 30,
+            min = constants$app_config$visualisation$temp$yrange[1],
+            max = constants$app_config$visualisation$temp$yrange[2]
+          ) |>
+          e_datazoom(show = FALSE) |>
+          e_tooltip(trigger = "axis") |>
+          e_legend(show = FALSE) |>
+          e_group("daily") |>
+          e_grid(
+            top = 10,
+            bottom = 20
+          ) |>
+          e_mark_line(data = list(yAxis = line_val), title = line_val)
+        
+        chart <- functions_devices$create_echarts4r_events(chart, 
+                                                           annotatedata, 
+                                                           yrange = constants$app_config$visualisation$temp$yrange,
+                                                           label = FALSE)
+        
+        chart
+        
+      })
+      
+      output$daily_graphs4 <- renderEcharts4r({
+        
+        if (series_options()$MOVE$line_type == "mean") {
+          line_val <- mean(data$MOVE$MOVE, na.rm = TRUE)
+        } else {
+          line_val <- series_options()$MOVE$custom_y_val
+        }
+        
+        chart <- data$MOVE |>
+          e_charts(DateTime) |>
+          e_line(MOVE, 
+                 name = "MOVE",
+                 symbol = "none",
+                 lineStyle = list(
+                   width = 1,
+                   color = constants$app_config$visualisation$move[[device]][[r$type]]$color
+                 )) |>
+          e_x_axis(
+            axisPointer = list(show = TRUE),
+            axisLabel = list(
+              formatter = yearMonthDate
+            )
+          ) |>
+          e_y_axis(
+            name = "Movement",
+            nameLocation = "center",
+            nameRotate = 90,
+            nameGap = 30,
+            min = constants$app_config$visualisation$move[[device]][[r$type]]$yrange[1],
+            max = constants$app_config$visualisation$move[[device]][[r$type]]$yrange[2]
+          ) |>
+          e_datazoom(type = "slider") |>
+          e_tooltip(trigger = "axis") |>
+          e_legend(show = FALSE) |>
+          e_group("daily") |>
+          e_connect_group("daily") |>
+          e_grid(
+            top = 10,
+            bottom = 60
+          ) |>
+          e_mark_line(data = list(yAxis = line_val), title = line_val)
+        
+        chart <- functions_devices$create_echarts4r_events(chart, 
+                                                           annotatedata, 
+                                                           yrange = constants$app_config$visualisation$move[[device]][[r$type]]$yrange,
+                                                           label = FALSE)
+        
+        chart <- chart |>
+          onRender(
+            sprintf("function(el, x) {
+               var chart = this.getChart();
+               chart.on('datazoom', function(e) {
+                 var xbounds = chart.getModel().getComponent('xAxis', 0).axis.scale.getExtent();
+                 // convert xbounds to date/time
+                 xbounds = xbounds.map(function(x) {
+                   return new Date(x);
+                 });
+                 Shiny.setInputValue('%s', xbounds);
+               });
+            }", session$ns("datazoom_bounds"))
+          )
+        
+        chart
+                
+      })
       
       toastr_success("Plot constructed, click on the 'Plot' tab!")
       updateActionButton(session, "btn_make_plot", label = "Update plot", icon = icon("sync"))
@@ -303,13 +529,13 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
       
       data <- data()
       
-      req(data$data)
+      req(data)
       req(problemtarget())
       
       functions$show_tab("plottab2")
       
       # Group move data by 1 hour
-      df <- data$data$MOVE |>
+      df <- data$MOVE |>
         mutate(active = ifelse(!is.na(activity_counts) & activity_counts > 0, 1, 0)) |>
         group_by(DateTime = lubridate::floor_date(DateTime, "1 hour")) |>
         summarise(
@@ -400,18 +626,23 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
     
     current_visible_annotations <- reactive({
       
-      # !!!! WATCH THE TIMEZONE!
-      # Problem: cannot read timezone info from rv$calendar$Start, should
-      # be saved there (as tzone attribute) when reading calendar
-      ran <- suppressWarnings({
-        ymd_hms(input$dygraph_current_data4_date_window, tz = "CET")
-      })
-      
-      calendar() |> 
-        filter(
-          (Start <= ran[[2]] & End <= ran[[2]]) &
-            (Start >= ran[[1]] & End >= ran[[1]])
-        )
+      if (!is.null(input$datazoom_bounds)) {
+        print(input$datazoom_bounds)
+        # !!!! WATCH THE TIMEZONE!
+        # Problem: cannot read timezone info from rv$calendar$Start, should
+        # be saved there (as tzone attribute) when reading calendar
+        ran <- suppressWarnings({
+          ymd_hms(input$datazoom_bounds, tz = "CET")
+        })
+        
+        calendar() |> 
+          filter(
+            (Start <= ran[[2]] & End <= ran[[2]]) &
+              (Start >= ran[[1]] & End >= ran[[1]])
+          )
+      } else {
+        calendar()
+      }
       
     })
     
