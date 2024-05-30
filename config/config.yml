@@ -25,7 +25,7 @@ visualisation:
         custom_y: 0.5
     nowatch:
       aggregated:
-        yrange: [0.98, 1.25]
+        yrange: [30, 40000]
         color: "#68228B"
-        custom_y: 0.5
+        custom_y: 10000
   default_color: "blue"

@@ -17,11 +17,11 @@ box::use(
 )
 
 hide_tab <- function(value){
-  hide(selector = glue("li > a[data-value='{value}']")) 
+  hide(selector = glue("li > a[data-value='{value}']"))
 }
 
 show_tab <- function(value){
-  show(selector = glue("li > a[data-value='{value}']")) 
+  show(selector = glue("li > a[data-value='{value}']"))
 }
 
 disable_link <- function(menu, name){
@@ -37,25 +37,25 @@ enable_link <- function(menu, name){
 }
 
 side_by_side <- function(...){
-  
+
   mc <- list(...)
   lapply(mc, function(x){
-    
+
     div(style = paste("display: inline-block;",
-                    "vertical-align: top;"), 
-        x)  
-    
+                    "vertical-align: top;"),
+        x)
+
   })
-  
+
 }
 
 logo_image_with_link <- function(img_path, url, width = 130){
-  tags$a(tags$img(src = img_path, class = "grayscale", width = 130, style = "padding: 10px"), 
+  tags$a(tags$img(src = img_path, class = "grayscale", width = 130, style = "padding: 10px"),
          href = url, target = "_blank")
 }
 
 analysis_summary_table <- function(a){
-  
+
   tribble(~Parameter, ~Value,
           "Mean acceleration", mean(a$data$ACC$a, na.rm=TRUE),
           "Mean temperature", mean(a$data$TEMP$TEMP, na.rm=TRUE),
@@ -71,21 +71,26 @@ analysis_summary_table <- function(a){
 }
 
 data_datetime_range <- function(data){
-  
-  r <- range(data$EDA[[get_datetime_column(data$EDA)]])
+
+  if ("EDA" %in% names(data)){
+    r <- range(data$EDA[[get_datetime_column(data$EDA)]])
+  } else if ("ACT" %in% names(data)){
+    r <- range(data$ACT[[get_datetime_column(data$ACT)]])
+  }
+
   as.numeric(difftime(r[2],r[1], units = "hours"))
-  
+
 }
 
 rectify_datetime <- function(date, time){
-  ISOdatetime(year(date), month(date), day(date), 
-              hour(time), minute(time), second(time))  
+  ISOdatetime(year(date), month(date), day(date),
+              hour(time), minute(time), second(time))
 }
 
 read_calendar <- function(fn){
-  
+
   ext <- tolower(file_ext(fn))
-  
+
   switch(ext,
          xls = read_excel(fn),
          xlsx = read_excel(fn),
@@ -95,21 +100,21 @@ read_calendar <- function(fn){
     mutate(Date = as.Date(Date),  ## ????
            Start = rectify_datetime(Date, Start),
            End = rectify_datetime(Date, End))
-  
+
 }
 
 validate_calendar <- function(data){
-  
+
   nms <- c("Date" ,"Start", "End" , "Text")
-  
+
   all(nms %in% names(data))
-  
+
 }
 
 read_problemtarget<- function(fn){
-  
+
   ext <- tolower(file_ext(fn))
-  
+
   switch(ext,
          xls = read_excel(fn),
          xlsx = read_excel(fn),
@@ -117,51 +122,51 @@ read_problemtarget<- function(fn){
   ) |>
     as_tibble() |>
     mutate(Date = as.Date(Date))
-  
+
 }
 
 validate_problemtarget <- function(data){
-  
+
   nms <- c("Date" ,"Problem or Target Behavior", "Score")
-  
+
   all(nms %in% names(data))
-  
+
 }
 
 calendar_add_color <- function(data, app_config){
-  
+
   if(!"Color" %in% names(data)){
     data$Color <- constants$app_config$visualisation$default_color
   }
-  
+
   return(data)
 }
 
 get_device_name <- function(device, title = FALSE){
-  
+
   device <- gsub("-", " ", device)
-  
+
   if (title){
      device <- str_to_title(device)
   }
-  
+
   return(device)
-  
+
 }
 
 get_device_id <- function(device) {
-  
+
   device <- tolower(gsub(" ", "-", device))
   return(device)
-  
+
 }
 
 get_datetime_column <- function(data){
-  
+
   if ("DateTime" %in% names(data)){
     return("DateTime")
   } else {
     stop("DateTime column not found in data. Please make sure it's there!")
   }
-  
+
 }

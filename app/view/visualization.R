@@ -182,7 +182,10 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
         hide("hr_options")
       }
 
-      if (!"ACC" %in% names(data()$data) && !"MOVE" %in% names(data()$data) && !"ACCELEROMETERS-STD" %in% names(data()$data)) {
+      if (!"ACC" %in% names(data()$data) &&
+          !"MOVE" %in% names(data()$data) &&
+          !"ACCELEROMETERS-STD" %in% names(data()$data) &&
+          !"COUNT" %in% names(data()$data)) {
         hide("move_options")
       }
 
@@ -291,8 +294,15 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
         } else if (r$type == "raw") {
           data$MOVE$MOVE <- data$MOVE$a
         }
+      } else if ("COUNT" %in% names(data)) {
+        data$MOVE <- data$COUNT
+        data$MOVE$MOVE <- data$MOVE$COUNT
       } else {
-        data$MOVE <- data.frame(data$EDA$DateTime, MOVE = NA)
+        if ("EDA" %in% names(data)) {
+          data$MOVE <- data.frame(data$EDA$DateTime, MOVE = NA)
+        } else if ("ACT" %in% names(data)) {
+          data$MOVE <- data.frame(data$ACT$DateTime, MOVE = NA)
+        }
       }
 
       yearMonthDate <- JS('function (value) {
@@ -302,6 +312,8 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
       }')
 
       output$daily_graphs1 <- renderEcharts4r({
+
+        req(data$EDA)
 
         if (series_options()$EDA$line_type == "mean") {
           line_val <- mean(data$EDA$EDA, na.rm = TRUE)
