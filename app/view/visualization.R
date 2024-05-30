@@ -182,7 +182,7 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
         hide("hr_options")
       }
 
-      if (!"ACC" %in% names(data()$data) && !"MOVE" %in% names(data()$data)) {
+      if (!"ACC" %in% names(data()$data) && !"MOVE" %in% names(data()$data) && !"ACCELEROMETERS-STD" %in% names(data()$data)) {
         hide("move_options")
       }
 
@@ -281,6 +281,9 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
       if ("ACC" %in% names(data)){
         data$MOVE <- data$ACC
         data$MOVE$MOVE <- data$MOVE$a
+      } else if ("ACCELEROMETERS-STD" %in% names(data)){
+        data$MOVE <- data$`ACCELEROMETERS-STD`
+        data$MOVE$MOVE <- data$MOVE$accelerometers_std_g
       } else if ("MOVE" %in% names(data)){
         if (r$type == "aggregated") {
           # For embraceplus data this is accelerometer_std_g
@@ -392,8 +395,7 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
 
         chart <- functions_devices$create_echarts4r_events(chart,
                                                            annotatedata,
-                                                           yrange = constants$app_config$visualisation$hr$yrange,
-                                                           label = FALSE)
+                                                           yrange = constants$app_config$visualisation$hr$yrange)
 
         chart
 
@@ -442,8 +444,7 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
 
         chart <- functions_devices$create_echarts4r_events(chart,
                                                            annotatedata,
-                                                           yrange = constants$app_config$visualisation$temp$yrange,
-                                                           label = FALSE)
+                                                           yrange = constants$app_config$visualisation$temp$yrange)
 
         chart
 
@@ -493,8 +494,7 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
 
         chart <- functions_devices$create_echarts4r_events(chart,
                                                            annotatedata,
-                                                           yrange = constants$app_config$visualisation$move[[device]][[r$type]]$yrange,
-                                                           label = FALSE)
+                                                           yrange = constants$app_config$visualisation$move[[device]][[r$type]]$yrange)
 
         chart <- chart |>
           onRender(

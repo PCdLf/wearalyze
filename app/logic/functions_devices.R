@@ -211,8 +211,13 @@ create_echarts4r_events <- function(chart, annotatedata, yrange, label = TRUE) {
       }
 
       chart <- chart |>
-        e_mark_line(data = list(xAxis = annotatedata$Start[i]),
-                    title = title)
+        e_mark_line(data = list(xAxis = annotatedata$Start[i],
+                                label = list(
+                                  formatter = title,
+                                  position = 'insideMiddleTop'
+                                )
+                                )
+        )
 
       if(!is.na(annotatedata$End[i])) {
         chart <- chart |>
