@@ -1,0 +1,238 @@
+{
+  "check_ins" : {
+    "2024-05-28T22:00:00Z" : [
+      {
+        "subjective_inputs" : [
+          [
+            {
+              "id" : "FDD4D2BF-16A4-419B-8462-4B1142408E3F",
+              "type" : 2,
+              "tag" : 3,
+              "timestamp" : "2024-05-29T11:46:29Z",
+              "value" : 1
+            },
+            {
+              "timestamp" : "2024-05-29T11:46:29Z",
+              "value" : 1,
+              "id" : "CB21479B-196A-4E65-8AD7-DBAD390479F1",
+              "type" : 2,
+              "tag" : 0
+            },
+            {
+              "id" : "E11A1CF3-634C-4814-9D8F-534B9CCEBC14",
+              "value" : 0,
+              "timestamp" : "2024-05-29T11:46:29Z",
+              "tag" : 0,
+              "type" : 3
+            },
+            {
+              "tag" : 1,
+              "timestamp" : "2024-05-29T11:46:29Z",
+              "id" : "D3FE6BB0-A84E-4EE0-A024-7034C87DB324",
+              "value" : 3,
+              "type" : 3
+            }
+          ]
+        ],
+        "id" : "BCC3B4EF-6CDB-469B-984A-6CD288189E2A",
+        "origin_type" : "random_reminder",
+        "timestamp" : "2024-05-29T11:46:08Z",
+        "name" : "",
+        "note" : ""
+      }
+    ],
+    "2024-05-21T22:00:00Z" : [
+      {
+        "note" : "",
+        "origin_type" : "crown_press",
+        "name" : "",
+        "subjective_inputs" : [
+          [
+            {
+              "id" : "ECD4209E-31D3-4A44-B820-F0BF4F30E3A2",
+              "value" : -1,
+              "timestamp" : "2024-05-22T08:44:49Z",
+              "tag" : 0,
+              "type" : 2
+            },
+            {
+              "type" : 2,
+              "timestamp" : "2024-05-22T08:44:49Z",
+              "id" : "6371D2FF-2542-4E9F-9015-908FD651D58C",
+              "value" : 1,
+              "tag" : 3
+            },
+            {
+              "timestamp" : "2024-05-22T08:44:49Z",
+              "value" : 0,
+              "tag" : 0,
+              "type" : 3,
+              "id" : "4AC16568-2319-44DD-8B8D-2439EB7B82A9"
+            },
+            {
+              "type" : 3,
+              "id" : "EF0C5619-1E71-4E9C-8DAE-954635B368DB",
+              "tag" : 1,
+              "timestamp" : "2024-05-22T08:44:49Z",
+              "value" : 3
+            }
+          ]
+        ],
+        "id" : "8D8FBE2A-834F-44AA-9233-1E0C6F87155F",
+        "timestamp" : "2024-05-22T08:44:12Z"
+      }
+    ],
+    "2024-05-27T22:00:00Z" : [
+      {
+        "note" : "",
+        "origin_type" : "crown_press",
+        "timestamp" : "2024-05-28T06:38:34Z",
+        "id" : "C3FDD250-3862-4480-8B92-B3E121906436",
+        "name" : "",
+        "subjective_inputs" : [
+          [
+
+          ]
+        ]
+      },
+      {
+        "note" : "",
+        "timestamp" : "2024-05-28T06:53:11Z",
+        "name" : "",
+        "subjective_inputs" : [
+          [
+            {
+              "type" : 2,
+              "value" : 1,
+              "id" : "69173359-AC68-4035-9663-666CAA1D260F",
+              "tag" : 0,
+              "timestamp" : "2024-05-28T06:53:21Z"
+            },
+            {
+              "type" : 2,
+              "tag" : 3,
+              "value" : 1,
+              "id" : "638EB0E8-7879-4B8C-8410-08CCD6B158D5",
+              "timestamp" : "2024-05-28T06:53:21Z"
+            },
+            {
+              "timestamp" : "2024-05-28T06:53:21Z",
+              "value" : 5,
+              "type" : 3,
+              "tag" : 1,
+              "id" : "70BA5523-9E7D-4F1C-8AD6-A254BFC12EE8"
+            },
+            {
+              "tag" : 0,
+              "id" : "EFCFB123-D821-4EF1-BA1A-FA3A82BD0731",
+              "value" : 0,
+              "timestamp" : "2024-05-28T06:53:21Z",
+              "type" : 3
+            }
+          ]
+        ],
+        "origin_type" : "crown_press",
+        "id" : "687474BC-5740-4758-A94B-958FC29AD5FF"
+      },
+      {
+        "timestamp" : "2024-05-28T17:18:52Z",
+        "id" : "070E9B0D-47DF-4601-8278-E86D9A0C44A9",
+        "note" : "",
+        "subjective_inputs" : [
+          [
+
+          ]
+        ],
+        "name" : "",
+        "origin_type" : "crown_press"
+      },
+      {
+        "note" : "",
+        "subjective_inputs" : [
+          [
+            {
+              "type" : 2,
+              "value" : 1,
+              "tag" : 3,
+              "timestamp" : "2024-05-28T17:55:39Z",
+              "id" : "35DA523A-EA08-4F3A-932C-315AF54E66CB"
+            },
+            {
+              "timestamp" : "2024-05-28T17:55:39Z",
+              "type" : 2,
+              "value" : -1,
+              "tag" : 0,
+              "id" : "5C5B7A6A-1675-45FF-BD5F-51D9FAC66852"
+            },
+            {
+              "tag" : 1,
+              "value" : 1,
+              "timestamp" : "2024-05-28T17:55:39Z",
+              "type" : 3,
+              "id" : "69F50914-0A31-416F-895C-F3E2D79C4C35"
+            },
+            {
+              "value" : 4,
+              "tag" : 0,
+              "id" : "84E509AB-F6CE-4633-90AF-54BC0757C212",
+              "timestamp" : "2024-05-28T17:55:39Z",
+              "type" : 3
+            },
+            {
+              "id" : "19BC4DA2-BE4D-4AF9-8185-404DA889532B",
+              "timestamp" : "2024-05-28T17:55:39Z",
+              "type" : 3,
+              "tag" : 0,
+              "value" : 2
+            }
+          ]
+        ],
+        "origin_type" : "crown_press",
+        "id" : "5A3913EC-8A21-4514-9D0B-57BDBEA885E3",
+        "timestamp" : "2024-05-28T17:54:55Z",
+        "name" : ""
+      }
+    ],
+    "2024-05-22T22:00:00Z" : [
+      {
+        "name" : "",
+        "id" : "B93BD02F-AAE7-46E8-BD8E-91F5C6B6FE10",
+        "subjective_inputs" : [
+          [
+            {
+              "timestamp" : "2024-05-23T09:39:26Z",
+              "type" : 2,
+              "tag" : 0,
+              "value" : 1,
+              "id" : "93087827-71B7-4D43-BF5F-6679C5F8ACBD"
+            },
+            {
+              "type" : 2,
+              "tag" : 3,
+              "value" : 1,
+              "timestamp" : "2024-05-23T09:39:26Z",
+              "id" : "4C1C70F0-6D01-4A0A-BA1F-CF7F8DF202D4"
+            },
+            {
+              "id" : "AE8082A3-0D6B-4286-977A-A2B161AB8666",
+              "timestamp" : "2024-05-23T09:39:26Z",
+              "value" : 5,
+              "type" : 3,
+              "tag" : 1
+            },
+            {
+              "value" : 5,
+              "id" : "F3FD5E5A-6F6F-4A4F-9F49-82781841CE73",
+              "tag" : 0,
+              "type" : 3,
+              "timestamp" : "2024-05-23T09:39:26Z"
+            }
+          ]
+        ],
+        "timestamp" : "2024-05-23T09:38:28Z",
+        "note" : "Listening to gospel",
+        "origin_type" : "crown_press"
+      }
+    ]
+  }
+}
