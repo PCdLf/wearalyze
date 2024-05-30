@@ -1,0 +1,156 @@
+{
+  "device_info" : {
+    "operating_system" : "iOS",
+    "app_version" : "1.9.8",
+    "firmware_version" : "-"
+  },
+  "system_events" : [
+    {
+      "timestamp" : 1716360671,
+      "data" : {
+        "value" : 120
+      },
+      "type" : "timezone"
+    },
+    {
+      "type" : "timezone",
+      "timestamp" : 1716415399,
+      "data" : {
+        "value" : 120
+      }
+    },
+    {
+      "type" : "charging",
+      "data" : {
+        "value" : 1
+      },
+      "timestamp" : 1716442264
+    },
+    {
+      "data" : {
+        "value" : 0
+      },
+      "timestamp" : 1716457108,
+      "type" : "crown_press"
+    },
+    {
+      "data" : {
+        "value" : 0
+      },
+      "timestamp" : 1716481899,
+      "type" : "skin"
+    },
+    {
+      "data" : {
+        "value" : 1
+      },
+      "type" : "skin",
+      "timestamp" : 1716482018
+    },
+    {
+      "type" : "skin",
+      "timestamp" : 1716492700,
+      "data" : {
+        "value" : 0
+      }
+    },
+    {
+      "data" : {
+        "value" : 1
+      },
+      "type" : "skin",
+      "timestamp" : 1716492960
+    },
+    {
+      "data" : {
+        "value" : 120
+      },
+      "type" : "timezone",
+      "timestamp" : 1716501880
+    },
+    {
+      "timestamp" : 1716536725,
+      "type" : "charging",
+      "data" : {
+        "value" : 1
+      }
+    },
+    {
+      "type" : "charging",
+      "data" : {
+        "value" : 1
+      },
+      "timestamp" : 1716536730
+    },
+    {
+      "data" : {
+        "value" : 0
+      },
+      "type" : "charging",
+      "timestamp" : 1716536730
+    },
+    {
+      "timestamp" : 1716541092,
+      "data" : {
+        "value" : 0
+      },
+      "type" : "charging"
+    },
+    {
+      "data" : {
+        "value" : 120
+      },
+      "timestamp" : 1716596038,
+      "type" : "timezone"
+    },
+    {
+      "type" : "timezone",
+      "data" : {
+        "value" : 120
+      },
+      "timestamp" : 1716707739
+    },
+    {
+      "type" : "timezone",
+      "timestamp" : 1716788493,
+      "data" : {
+        "value" : 120
+      }
+    },
+    {
+      "data" : {
+        "value" : 120
+      },
+      "type" : "timezone",
+      "timestamp" : 1716874741
+    },
+    {
+      "type" : "crown_press",
+      "timestamp" : 1716878314,
+      "data" : {
+        "value" : 0
+      }
+    },
+    {
+      "type" : "crown_press",
+      "data" : {
+        "value" : 0
+      },
+      "timestamp" : 1716916732
+    },
+    {
+      "timestamp" : 1716933604,
+      "type" : "timezone",
+      "data" : {
+        "value" : 120
+      }
+    },
+    {
+      "data" : {
+        "value" : 120
+      },
+      "timestamp" : 1717051540,
+      "type" : "timezone"
+    }
+  ]
+}

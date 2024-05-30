@@ -330,6 +330,27 @@
       "Repository": "CRAN",
       "Hash": "976cf154dfb043c012d87cddd8bca363"
     },
+    "broom": {
+      "Package": "broom",
+      "Version": "1.0.5",
+      "Source": "Repository",
+      "Repository": "RSPM",
+      "Requirements": [
+        "R",
+        "backports",
+        "dplyr",
+        "ellipsis",
+        "generics",
+        "glue",
+        "lifecycle",
+        "purrr",
+        "rlang",
+        "stringr",
+        "tibble",
+        "tidyr"
+      ],
+      "Hash": "fd25391c3c4f6ecf0fa95f1e6d15378c"
+    },
     "bslib": {
       "Package": "bslib",
       "Version": "0.6.1",
@@ -450,6 +471,23 @@
         "yaml"
       ],
       "Hash": "8b7222e9d9eb5178eea545c0c4d33fc2"
+    },
+    "corrplot": {
+      "Package": "corrplot",
+      "Version": "0.92",
+      "Source": "Repository",
+      "Repository": "RSPM",
+      "Hash": "fcf11a91936fd5047b2ee9bc00595e36"
+    },
+    "countrycode": {
+      "Package": "countrycode",
+      "Version": "1.6.0",
+      "Source": "Repository",
+      "Repository": "RSPM",
+      "Requirements": [
+        "R"
+      ],
+      "Hash": "08b7058813f13c7a1bb294fea9045e3a"
     },
     "cpp11": {
       "Package": "cpp11",
@@ -626,6 +664,27 @@
         "zoo"
       ],
       "Hash": "716869fffc16e282c118f8894e082a7d"
+    },
+    "echarts4r": {
+      "Package": "echarts4r",
+      "Version": "0.4.5",
+      "Source": "Repository",
+      "Repository": "RSPM",
+      "Requirements": [
+        "R",
+        "broom",
+        "corrplot",
+        "countrycode",
+        "dplyr",
+        "htmltools",
+        "htmlwidgets",
+        "jsonlite",
+        "purrr",
+        "rstudioapi",
+        "scales",
+        "shiny"
+      ],
+      "Hash": "4247fd6acd3bdb4a481479f469956d2f"
     },
     "ellipsis": {
       "Package": "ellipsis",
@@ -1666,10 +1725,10 @@
     },
     "rstudioapi": {
       "Package": "rstudioapi",
-      "Version": "0.14",
+      "Version": "0.16.0",
       "Source": "Repository",
-      "Repository": "CRAN",
-      "Hash": "690bd2acc42a9166ce34845884459320"
+      "Repository": "RSPM",
+      "Hash": "96710351d642b70e8f02ddeb237c46a7"
     },
     "rvest": {
       "Package": "rvest",
@@ -2227,7 +2286,7 @@
       "RemoteRepo": "wearables",
       "RemoteUsername": "PCdLf",
       "RemoteRef": "HEAD",
-      "RemoteSha": "52c1be51fe5cb2b401e25a12062f0972c9627cba",
+      "RemoteSha": "a7d78248e9fd8b5563e29b3bbb800c700113e7ad",
       "Requirements": [
         "R",
         "R.utils",
@@ -2247,7 +2306,7 @@
         "waveslim",
         "xts"
       ],
-      "Hash": "d72d5642a12010fa5d769c363c2a9b51"
+      "Hash": "790fd21a6608a71a32669712a19df9cf"
     },
     "webshot": {
       "Package": "webshot",
