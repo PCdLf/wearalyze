@@ -561,6 +561,11 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
 
       if ("ACTIVITY-COUNTS" %in% names(data)) {
         data$MOVE <- data$`ACTIVITY-COUNTS`
+      } else if ("COUNT" %in% names(data)) {
+        data$MOVE <- data$COUNT
+        data$MOVE$activity_counts <- data$MOVE$COUNT
+      } else {
+        data$MOVE <- data$MOVE
       }
 
       # Group move data by 1 hour
