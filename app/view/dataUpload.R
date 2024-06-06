@@ -317,6 +317,15 @@ server <- function(id, device, r) {
 
           rv$newdata <- runif(1)
 
+          if (device == "nowatch") {
+            min_date <- min(rv$data_agg$HR$DateTime)
+            max_date <- max(rv$data_agg$HR$DateTime)
+          } else {
+            min_date <- min(rv$data_agg$EDA$DateTime)
+            max_date <- max(rv$data_agg$EDA$DateTime)
+          }
+          r$more_than_24h <- difftime(max_date, min_date, units = "hours") > 24
+
           # Message: data read!
           toastr_success("Data read successfully.")
 
@@ -377,8 +386,13 @@ server <- function(id, device, r) {
                })
 
         # Get min and max date, and determine whether or not there's more than 24 hours
-        min_date <- min(rv$data_agg$EDA$DateTime)
-        max_date <- max(rv$data_agg$EDA$DateTime)
+        if (device == "nowatch") {
+          min_date <- min(rv$data_agg$HR$DateTime)
+          max_date <- max(rv$data_agg$HR$DateTime)
+        } else {
+          min_date <- min(rv$data_agg$EDA$DateTime)
+          max_date <- max(rv$data_agg$EDA$DateTime)
+        }
         r$more_than_24h <- difftime(max_date, min_date, units = "hours") > 24
 
         rv$newdata <- runif(1)
