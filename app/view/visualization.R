@@ -2,7 +2,7 @@
 box::use(
   bslib[navset_tab, nav_panel, nav_select, card, card_header],
   DT[datatable, DTOutput, renderDT],
-  dplyr[filter, group_by, join_by, left_join, mutate, summarise, ungroup],
+  dplyr[arrange, filter, group_by, join_by, left_join, mutate, summarise, ungroup],
   dygraphs[dygraphOutput, renderDygraph],
   echarts4r[e_bar, e_charts, e_connect_group, e_data, e_datazoom,
             e_flip_coords, e_grid, e_group, e_heatmap,
@@ -544,7 +544,24 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
       req(data)
       req(problemtarget())
 
+      # Precalc. timeseries (for viz.)
+      if(is.null(input$rad_plot_agg)){
+        agg <- "Yes"
+      } else {
+        agg <- input$rad_plot_agg
+      }
+
+      if (agg == "Yes") {
+        data <- data$data_agg
+      } else {
+        data <- data$data
+      }
+
       functions$show_tab(session$ns("plottab2"))
+
+      if ("ACTIVITY-COUNTS" %in% names(data)) {
+        data$MOVE <- data$`ACTIVITY-COUNTS`
+      }
 
       # Group move data by 1 hour
       df <- data$MOVE |>
@@ -561,7 +578,8 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
         # scale activity level as number between 0 and 10
         mutate(activity_level = round(scales::rescale(activity_level, to = c(0, 10)))) |>
         # merge problemtarget() data based on Date
-        left_join(problemtarget(), by = join_by(date == Date))
+        left_join(problemtarget(), by = join_by(date == Date)) |>
+        arrange(desc(DateTime))
 
       # Calculate weekly average of activity time
       week_data <- df |>
@@ -594,6 +612,8 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
         df |>
           group_by(date) |>
           summarise(activity_time = sum(activity_time, na.rm = TRUE)) |>
+          arrange(desc(date)) |>
+          mutate(date = as.character(date)) |>
           e_charts(date) |>
           e_bar(activity_time) |>
           e_data(week_data) |>
@@ -612,11 +632,13 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
 
       output$echarts_problemtarget3 <- renderEcharts4r({
 
-        title <- df$`Problem or Target Behavior` |> unique()
+        title <- setdiff(df$`Problem or Target Behavior` |> unique(), NA)
 
         df |>
           group_by(date) |>
           summarise(score = mean(Score, na.rm = TRUE)) |>
+          arrange(desc(date)) |>
+          mutate(date = as.character(date)) |>
           e_charts(date) |>
           e_line(score) |>
           e_y_axis(name = "Score") |>

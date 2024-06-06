@@ -16,19 +16,19 @@ box::use(
 )
 
 ui <- function(id, device){
-  
+
   ns <- NS(id)
-  
+
   device_name <- device
   device <- functions$get_device_id(device)
-  
+
   nav_menu(
     title = device_name,
     value = paste0(device, "-menu"),
     icon = icon("heart-circle-bolt"),
     nav_panel("Data",
               icon = icon("file-upload"),
-              dataUpload$ui(ns(paste0(device, "-data")), 
+              dataUpload$ui(ns(paste0(device, "-data")),
                             device = device)
     ),
     nav_panel("Calendar",
@@ -52,37 +52,37 @@ ui <- function(id, device){
               batch$ui(ns(paste0(device, "-batch")))
     )
   )
-  
+
 }
 
 server <- function(id, device) {
   moduleServer(id, function(input, output, session) {
-    
+
     device <- tolower(gsub(" ", "-", device))
-    
+
     # reactive values -------------------------------
     r <- reactiveValues(
       device = NULL,
       type = ifelse(constants$device_config[[device]]$aggregated, "aggregated", "raw"),
       more_than_24h = FALSE
     )
-    
+
     # Modules ---------------------------------------
-    data_in <- dataUpload$server(id = paste0(device, "-data"), 
+    data_in <- dataUpload$server(id = paste0(device, "-data"),
                                  device = device,
                                  r = r)
-    
+
     calendar <- calendar$server(id = paste0(device, "-calendar"),
                                 device = device,
                                 r = r)
-    
+
     visualization <- visualization$server(id = paste0(device, "-visualization"),
                                           data = data_in,
                                           device = device,
                                           calendar = calendar$calendar,
                                           problemtarget = calendar$problemtarget,
                                           r = r)
-    
+
     analysis$server(id = paste0(device, "-analysis"),
                     data = data_in,
                     plots = visualization,
@@ -94,6 +94,6 @@ server <- function(id, device) {
 
     batch$server(id = paste0(device, "-batch"),
                  device = device)
-    
+
   })
 }
