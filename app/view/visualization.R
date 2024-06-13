@@ -125,17 +125,7 @@ ui <- function(id) {
         title = "Target Behaviour",
         icon = icon("chart-bar"),
         value = ns("plottab2"),
-        fluidRow(
-          column(4,
-                 echarts4rOutput(ns("echarts_problemtarget1")),
-          ),
-          column(4,
-                 echarts4rOutput(ns("echarts_problemtarget2"))
-          ),
-          column(4,
-                 echarts4rOutput(ns("echarts_problemtarget3"))
-          )
-        )
+        uiOutput(ns("problemtarget_plots"))
       ),
 
       nav_panel(
@@ -592,6 +582,43 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
 
     }) |> bindEvent(c(input$btn_make_plot, input$btn_update_dates))
 
+    output$problemtarget_plots <- renderUI({
+
+      data <- data()
+
+      req(data)
+      req(problemtarget())
+
+      if ("STRESS" %in% names(data$data)) {
+        fluidRow(
+          column(3,
+                 echarts4rOutput(session$ns("echarts_problemtarget_act_level")),
+          ),
+          column(3,
+                 echarts4rOutput(session$ns("echarts_problemtarget_act_time"))
+          ),
+          column(3,
+                 echarts4rOutput(session$ns("echarts_problemtarget_stress"))
+          ),
+          column(3,
+                 echarts4rOutput(session$ns("echarts_problemtarget_behaviour"))
+          )
+        )
+      } else {
+        fluidRow(
+          column(4,
+                 echarts4rOutput(session$ns("echarts_problemtarget_act_level")),
+          ),
+          column(4,
+                 echarts4rOutput(session$ns("echarts_problemtarget_act_time"))
+          ),
+          column(4,
+                 echarts4rOutput(session$ns("echarts_problemtarget_behaviour"))
+          )
+        )
+      }
+    })
+
     observe({
 
       data <- data()
@@ -657,7 +684,18 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
         return datestring
       }')
 
-      output$echarts_problemtarget1 <- renderEcharts4r({
+      if ("STRESS" %in% names(data)) {
+        df_stress <- data$STRESS |>
+          group_by(DateTime = lubridate::floor_date(DateTime, "1 hour")) |>
+          summarise(
+            STRESS = mean(STRESS, na.rm = TRUE),
+            .groups = "drop"
+          ) |>
+          mutate(date = as.Date(DateTime)) |>
+          arrange(desc(DateTime))
+      }
+
+      output$echarts_problemtarget_act_level <- renderEcharts4r({
         df |>
           e_charts(hour) |>
           e_heatmap(date, activity_level, label = list(show = TRUE)) |>
@@ -668,7 +706,7 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
           e_grid(left = 70)
       })
 
-      output$echarts_problemtarget2 <- renderEcharts4r({
+      output$echarts_problemtarget_act_time <- renderEcharts4r({
         df |>
           group_by(date) |>
           summarise(activity_time = sum(activity_time, na.rm = TRUE)) |>
@@ -678,7 +716,12 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
           e_bar(activity_time) |>
           e_data(week_data) |>
           e_line(weekly_activity_time) |>
-          e_y_axis(name = "Minutes") |>
+          e_y_axis(name = "Minutes",
+                   nameGap = 0,
+                   nameLocation = "end",
+                   nameTextStyle = list(
+                     align = "right"
+                   )) |>
           e_x_axis(
             axisPointer = list(show = TRUE),
             axisLabel = list(
@@ -690,7 +733,7 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
           e_grid(left = 70)
       })
 
-      output$echarts_problemtarget3 <- renderEcharts4r({
+      output$echarts_problemtarget_behaviour <- renderEcharts4r({
 
         title <- setdiff(df$`Problem or Target Behavior` |> unique(), NA)
 
@@ -701,7 +744,14 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
           mutate(date = as.character(date)) |>
           e_charts(date) |>
           e_line(score) |>
-          e_y_axis(name = "Score") |>
+          e_y_axis(
+            name = "Score",
+            nameGap = 0,
+            nameLocation = "end",
+            nameTextStyle = list(
+              align = "right"
+            )
+          ) |>
           e_x_axis(
             axisPointer = list(show = TRUE),
             axisLabel = list(
@@ -709,6 +759,34 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
             )
           ) |>
           e_title(paste(title, "Score")) |>
+          e_flip_coords() |>
+          e_grid(left = 70)
+      })
+
+      output$echarts_problemtarget_stress <- renderEcharts4r({
+
+        req(df_stress)
+
+        df_stress |>
+          group_by(date) |>
+          summarise(STRESS = mean(STRESS, na.rm = TRUE)) |>
+          arrange(desc(date)) |>
+          mutate(date = as.character(date)) |>
+          e_charts(date) |>
+          e_line(STRESS) |>
+          e_y_axis(name = "Stress",
+                   nameGap = 0,
+                   nameLocation = "end",
+                   nameTextStyle = list(
+                     align = "right"
+                   )) |>
+          e_x_axis(
+            axisPointer = list(show = TRUE),
+            axisLabel = list(
+              formatter = yearMonthDate
+            )
+          ) |>
+          e_title("Measured Stress") |>
           e_flip_coords() |>
           e_grid(left = 70)
       })
