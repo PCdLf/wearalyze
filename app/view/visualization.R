@@ -93,17 +93,12 @@ ui <- function(id) {
         icon = icon("chart-bar"),
         value = ns("plottab"),
         withSpinner(
-          echarts4rOutput(ns("daily_graphs1"), height = "300px"),
+          echarts4rOutput(ns("daily_graphs1"), height = "220px"),
         ),
-        echarts4rOutput(ns("daily_graphs2"), height = "300px"),
-        echarts4rOutput(ns("daily_graphs3"), height = "300px"),
-        echarts4rOutput(ns("daily_graphs4"), height = "300px"),
-        #dygraphOutput(ns("dygraph_current_data1"), height = "140px")
-        # ),
-        # dygraphOutput(ns("dygraph_current_data2"), height = "140px"),
-        # dygraphOutput(ns("dygraph_current_data3"), height = "140px"),
-        # dygraphOutput(ns("dygraph_current_data4"), height = "140px"),
-        uiOutput(ns("dygraph_notes"))
+        echarts4rOutput(ns("daily_graphs2"), height = "220px"),
+        echarts4rOutput(ns("daily_graphs3"), height = "220px"),
+        echarts4rOutput(ns("daily_graphs4"), height = "220px"),
+        uiOutput(ns("echarts_notes"))
       ),
 
       nav_panel(
@@ -279,6 +274,13 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
         annotatedata <- calendar()
       } else {
         annotatedata <- NULL
+      }
+
+      if(!"EDA" %in% names(data)){
+        if ("SKIN_CONDUCTANCE" %in% names(data)){
+          data$EDA <- data$SKIN_CONDUCTANCE
+          data$EDA$EDA <- data$EDA$SKIN_CONDUCTANCE
+        }
       }
 
       if ("ACC" %in% names(data)){
@@ -685,7 +687,7 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
 
     })
 
-    output$dygraph_notes <- renderUI({
+    output$echarts_notes <- renderUI({
       if (device == "embrace-plus"&& r$type == "raw") {
         p("Note: the Embrace Plus device does not have HR per second
           available when data is in raw format. The aggregated HR is available
