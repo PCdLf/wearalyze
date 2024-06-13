@@ -15,10 +15,11 @@ box::use(
   shiny[actionButton, bindEvent, br, checkboxInput, column, fluidRow, hr,
         icon, isTruthy, moduleServer, NS, observe, radioButtons,
         reactive, reactiveVal, renderUI, req, tagList, tags, textInput, uiOutput,
-        updateActionButton, p],
+        updateActionButton, p, tagAppendAttributes],
   shinycssloaders[withSpinner],
   shinyjs[hide, show],
   shinytoastr[toastr_info, toastr_success],
+  shinyWidgets[pickerInput, updatePickerInput],
   stats[runif]
 )
 
@@ -92,6 +93,25 @@ ui <- function(id) {
         title = "Daily",
         icon = icon("chart-bar"),
         value = ns("plottab"),
+        fluidRow(
+          column(3,
+                 offset = 1,
+                 pickerInput(ns("date_picker"),
+                             label = "Select day",
+                             choices = "All",
+                             selected = "All",
+                             width = "100%")
+          ),
+          column(
+            1,
+            tagAppendAttributes(
+              style = "margin-top:30px",
+              actionButton(ns("btn_update_dates"),
+                           "",
+                           icon = icon("sync"))
+            )
+          )
+        ),
         withSpinner(
           echarts4rOutput(ns("daily_graphs1"), height = "220px"),
         ),
@@ -146,6 +166,25 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
     y_temp <- visSeriesOptions$server("temp")
 
     # Functionality ---------------------------------
+    observe({
+      if (r$more_than_24h == TRUE) {
+        show("date_picker")
+        show("btn_update_dates")
+        updatePickerInput(session,
+                          "date_picker",
+                          choices = c("All", as.character(unique(as.Date(data()$data[[1]]$DateTime)))))
+      } else {
+        hide("date_picker")
+        hide("btn_update_dates")
+        r$chosen_dates <- "All"
+      }
+    })
+
+    observe({
+      req(input$date_picker)
+      r$chosen_dates <- input$date_picker
+    })
+
     output$ui_move <- renderUI({
       ns <- session$ns
       type <- r$type
@@ -244,7 +283,7 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
 
       data <- data()
 
-      req(data)
+      req(data$data)
 
       toastr_info("Plot construction started...")
 
@@ -274,6 +313,20 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
         annotatedata <- calendar()
       } else {
         annotatedata <- NULL
+      }
+
+      # subset all data elements to chosen dates
+      if (r$chosen_dates != "All") {
+        data <- lapply(data, function(x) {
+          # skip when no DateTime column found
+          if (!"DateTime" %in% names(x)) {
+            return(x)
+          }
+          x$date <- as.Date(x$DateTime, tz = Sys.timezone())
+          x <- x[x$date %in% as.Date(r$chosen_dates),]
+          x$date <- NULL
+          x
+        })
       }
 
       if(!"EDA" %in% names(data)){
@@ -529,15 +582,15 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
 
       })
 
-      toastr_success("Plot constructed, click on the 'Plot' tab!")
+      toastr_success("Done!")
       updateActionButton(session, "btn_make_plot", label = "Update plot", icon = icon("sync"))
 
-      if(r$type == "raw"){
+      if(r$type == "raw" && device == "e4"){
         functions$enable_link(menu = device,
                               name = "Analysis")
       }
 
-    }) |> bindEvent(input$btn_make_plot)
+    }) |> bindEvent(c(input$btn_make_plot, input$btn_update_dates))
 
     observe({
 
