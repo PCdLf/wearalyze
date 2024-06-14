@@ -19,3 +19,5 @@ library(knitr)
 library(shinyFiles)
 library(sever)
 library(echarts4r)
+library(tidyr)
+

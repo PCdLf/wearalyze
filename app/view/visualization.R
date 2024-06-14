@@ -20,7 +20,8 @@ box::use(
   shinyjs[hide, show],
   shinytoastr[toastr_info, toastr_success],
   shinyWidgets[pickerInput, updatePickerInput],
-  stats[runif]
+  stats[runif],
+  tidyr[complete]
 )
 
 box::use(
@@ -367,6 +368,8 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
         }
 
         chart <- data$EDA |>
+          complete(DateTime = seq.Date(as.Date(min(DateTime)), as.Date(max(DateTime)), by = "1 day")) |>
+          arrange(DateTime) |>
           e_charts(DateTime) |>
           e_line(EDA,
                  name = "EDA",
@@ -418,6 +421,8 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
         }
 
         chart <- data$HR |>
+          complete(DateTime = seq.Date(as.Date(min(DateTime)), as.Date(max(DateTime)), by = "1 day")) |>
+          arrange(DateTime) |>
           e_charts(DateTime) |>
           e_line(HR,
                  name = "HR",
@@ -467,6 +472,8 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
         }
 
         chart <- data$TEMP |>
+          complete(DateTime = seq.Date(as.Date(min(DateTime)), as.Date(max(DateTime)), by = "1 day")) |>
+          arrange(DateTime) |>
           e_charts(DateTime) |>
           e_line(TEMP,
                  name = "Temperature",
@@ -516,6 +523,8 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
         }
 
         chart <- data$MOVE |>
+          complete(DateTime = seq.Date(as.Date(min(DateTime)), as.Date(max(DateTime)), by = "1 day")) |>
+          arrange(DateTime) |>
           e_charts(DateTime) |>
           e_line(MOVE,
                  name = "MOVE",
@@ -589,7 +598,29 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
       req(data)
       req(problemtarget())
 
-      if ("STRESS" %in% names(data$data)) {
+      if ("STRESS" %in% names(data$data) && "SLEEP" %in% names(data$data)) {
+        tagList(
+          fluidRow(
+            column(4,
+                   echarts4rOutput(session$ns("echarts_problemtarget_act_level")),
+            ),
+            column(4,
+                   echarts4rOutput(session$ns("echarts_problemtarget_act_time"))
+            ),
+            column(4,
+                   echarts4rOutput(session$ns("echarts_problemtarget_stress"))
+            )
+          ),
+          fluidRow(
+            column(6,
+                   echarts4rOutput(session$ns("echarts_problemtarget_sleep")),
+            ),
+            column(6,
+                   echarts4rOutput(session$ns("echarts_problemtarget_behaviour"))
+            )
+          )
+        )
+      } else if ("STRESS" %in% names(data$data)) {
         fluidRow(
           column(3,
                  echarts4rOutput(session$ns("echarts_problemtarget_act_level")),
@@ -695,6 +726,36 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
           arrange(desc(DateTime))
       }
 
+      if ("SLEEP" %in% names(data)) {
+        if ("start_timestamp" %in% names(data$SLEEP)) {
+          df_sleep <- data$SLEEP |>
+            mutate(start_timestamp = as.POSIXct(start_timestamp, origin = "1970-01-01", tz = "UTC"),
+                   end_timestamp = as.POSIXct(end_timestamp, origin = "1970-01-01", tz = "UTC"),
+                   DateTime = as.Date(start_timestamp),
+                   SLEEP = end_timestamp - start_timestamp) |>
+            group_by(DateTime) |>
+            summarise(
+              SLEEP = as.numeric(sum(SLEEP, na.rm = TRUE)),
+              .groups = "drop"
+            ) |>
+            mutate(date = as.Date(DateTime)) |>
+            arrange(desc(DateTime))
+
+          # Calculate weekly average of sleep
+          week_data_sleep <- df_sleep |>
+            group_by(date) |>
+            mutate(SLEEP = as.numeric(sum(SLEEP, na.rm = TRUE))) |>
+            ungroup() |>
+            mutate(week = format(DateTime, "%W")) |>
+            group_by(week) |>
+            summarise(weekly_sleep = mean(SLEEP),
+                      date = max(date))
+
+        } else {
+          df_sleep <- NULL
+        }
+      }
+
       output$echarts_problemtarget_act_level <- renderEcharts4r({
         df |>
           e_charts(hour) |>
@@ -713,9 +774,11 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
           arrange(desc(date)) |>
           mutate(date = as.character(date)) |>
           e_charts(date) |>
-          e_bar(activity_time) |>
+          e_bar(activity_time,
+                name = "Activity") |>
           e_data(week_data) |>
-          e_line(weekly_activity_time) |>
+          e_line(weekly_activity_time,
+                 name = "Weekly avg") |>
           e_y_axis(name = "Minutes",
                    nameGap = 0,
                    nameLocation = "end",
@@ -730,7 +793,11 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
           ) |>
           e_title("Activity Time") |>
           e_flip_coords() |>
-          e_grid(left = 70)
+          e_grid(left = 70)  |>
+          e_legend(
+            left = "left",
+            top = 30
+          )
       })
 
       output$echarts_problemtarget_behaviour <- renderEcharts4r({
@@ -758,9 +825,12 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
               formatter = yearMonthDate
             )
           ) |>
-          e_title(paste(title, "Score")) |>
+          e_title(paste("Target:", title, "Score")) |>
           e_flip_coords() |>
-          e_grid(left = 70)
+          e_grid(left = 70)  |>
+          e_legend(
+            show = FALSE
+          )
       })
 
       output$echarts_problemtarget_stress <- renderEcharts4r({
@@ -788,7 +858,44 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
           ) |>
           e_title("Measured Stress") |>
           e_flip_coords() |>
-          e_grid(left = 70)
+          e_grid(left = 70)  |>
+          e_legend(
+            show = FALSE
+          )
+      })
+
+      output$echarts_problemtarget_sleep <- renderEcharts4r({
+        req(df_sleep)
+        df_sleep |>
+          group_by(date) |>
+          summarise(SLEEP = sum(SLEEP, na.rm = TRUE)) |>
+          arrange(desc(date)) |>
+          mutate(date = as.character(date)) |>
+          e_charts(date) |>
+          e_bar(SLEEP,
+                name = "Hours of sleep") |>
+          e_data(week_data_sleep) |>
+          e_line(weekly_sleep,
+                 name = "Weekly avg") |>
+          e_y_axis(name = "Hours",
+                   nameGap = 0,
+                   nameLocation = "end",
+                   nameTextStyle = list(
+                     align = "right"
+                   )) |>
+          e_x_axis(
+            axisPointer = list(show = TRUE),
+            axisLabel = list(
+              formatter = yearMonthDate
+            )
+          ) |>
+          e_title("Sleep") |>
+          e_flip_coords() |>
+          e_grid(left = 70) |>
+          e_legend(
+            left = "left",
+            top = 30
+          )
       })
 
       updateActionButton(session, "btn_make_plot", label = "Update plot", icon = icon("sync"))
