@@ -1,6 +1,6 @@
 
 box::use(
-  dplyr[mutate],
+  dplyr[group_by, mutate],
   glue[glue],
   lubridate[year, month, day, hour, minute, second],
   readxl[read_excel],
@@ -87,6 +87,23 @@ rectify_datetime <- function(date, time){
               hour(time), minute(time), second(time))
 }
 
+default_colors <- function() {
+  c("darkorange",
+    "darkgreen",
+    "darkblue",
+    "darkred",
+    "darkcyan",
+    "darkmagenta",
+    "yellow",
+    "purple",
+    "pink",
+    "brown",
+    "grey",
+    "skyblue",
+    "lightgreen",
+    "lightblue")
+}
+
 read_calendar <- function(fn){
 
   ext <- tolower(file_ext(fn))
@@ -99,7 +116,10 @@ read_calendar <- function(fn){
     as_tibble() |>
     mutate(Date = as.Date(Date),  ## ????
            Start = rectify_datetime(Date, Start),
-           End = rectify_datetime(Date, End))
+           End = rectify_datetime(Date, End)) |>
+    group_by(Text) |>
+    mutate(Color = ifelse(is.na(Color), sample(default_colors(), 1), Color))
+
 
 }
 
@@ -136,7 +156,9 @@ validate_problemtarget <- function(data){
 calendar_add_color <- function(data, app_config){
 
   if(!"Color" %in% names(data)){
-    data$Color <- constants$app_config$visualisation$default_color
+    data <- data |>
+      group_by(Text) |>
+      mutate(Color = sample(default_colors(), 1))
   }
 
   return(data)
