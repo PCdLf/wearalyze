@@ -26,9 +26,9 @@ ui <- function(id) {
     title = "Wearalyze",
     theme = constants$wearalyze_theme,
     fillable = FALSE,
-    devicePage$ui(id = ns("e4"), device = "E4"),
     devicePage$ui(id = ns("embrace-plus"), device = "Embrace Plus"),
     devicePage$ui(id = ns("nowatch"), device = "Nowatch"),
+    devicePage$ui(id = ns("e4"), device = "E4")
   )
 }
 
