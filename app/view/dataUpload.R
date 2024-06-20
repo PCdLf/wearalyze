@@ -331,7 +331,10 @@ server <- function(id, device, r) {
 
           functions$enable_link(menu = device, name = "Calendar")
           functions$enable_link(menu = device, name = "Visualization")
-          functions$enable_link(menu = device, name = "Data cutter")
+
+          if (device == "e4") {
+            functions$enable_link(menu = device, name = "Data cutter")
+          }
 
           hide("div_upload_file")
           show("div_restart_application")
@@ -402,7 +405,10 @@ server <- function(id, device, r) {
 
         functions$enable_link(menu = device, name = "Calendar")
         functions$enable_link(menu = device, name = "Visualization")
-        functions$enable_link(menu = device, name = "Data cutter")
+
+        if (device == "e4") {
+          functions$enable_link(menu = device, name = "Data cutter")
+        }
 
         hide("div_upload_file")
         show("div_restart_application")

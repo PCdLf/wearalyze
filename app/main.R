@@ -35,14 +35,14 @@ ui <- function(id) {
 #' @export
 server <- function(id) {
   moduleServer(id, function(input, output, session) {
-    
+
     # Error catching --------------------------------
     disconnected <- tagList(
       h1("Oops, lost connection!",
          style = "color: black;"),
       p("Please try to reconnect."),
       div(
-        img(src = "https://github.com/PCdLf/wearalyze/blob/main/app/static/logos/wearalyz_oops.png?raw=true", 
+        img(src = "https://github.com/PCdLf/wearalyze/blob/main/app/static/logos/wearalyz_oops.png?raw=true",
             width = "300px")
       ),
       br(),
@@ -50,23 +50,26 @@ server <- function(id) {
         reload_button("Reconnect", class = "warning")
       )
     )
-    
+
     sever(html = disconnected, bg_color = "#f2f2f2", color = "black")
-    
+
     # Init ------------------------------------------
     options(shiny.maxRequestSize = 100*1024^2)
-    
+
     for (device in c("e4", "embrace-plus", "nowatch")) {
       functions$disable_link(menu = device, name = "Calendar")
       functions$disable_link(menu = device, name = "Visualization")
       functions$disable_link(menu = device, name = "Data cutter")
-      functions$disable_link(menu = device, name = "Analysis") 
+      functions$disable_link(menu = device, name = "Analysis")
+      if (device == "embrace-plus" | device == "nowatch") {
+        functions$disable_link(menu = device, name = "Batch analysis")
+      }
     }
-    
+
     # Modules ---------------------------------------
     devicePage$server(id = "e4", device = "E4")
     devicePage$server(id = "embrace-plus", device = "Embrace Plus")
     devicePage$server(id = "nowatch", device = "Nowatch")
-    
+
   })
 }
