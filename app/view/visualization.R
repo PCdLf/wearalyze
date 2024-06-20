@@ -635,6 +635,21 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
                  echarts4rOutput(session$ns("echarts_problemtarget_behaviour"))
           )
         )
+      } else if ("SLEEP" %in% names(data$data)) {
+        fluidRow(
+          column(3,
+                 echarts4rOutput(session$ns("echarts_problemtarget_act_level")),
+          ),
+          column(3,
+                 echarts4rOutput(session$ns("echarts_problemtarget_act_time"))
+          ),
+          column(3,
+                 echarts4rOutput(session$ns("echarts_problemtarget_sleep"))
+          ),
+          column(3,
+                 echarts4rOutput(session$ns("echarts_problemtarget_behaviour"))
+          )
+        )
       } else {
         fluidRow(
           column(4,
@@ -751,6 +766,25 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
             summarise(weekly_sleep = mean(SLEEP),
                       date = max(date))
 
+        } else if ("sleep_detection_stage" %in% names(data$SLEEP)) {
+          df_sleep <- data$SLEEP |>
+            mutate(SLEEP = ifelse(!is.na(sleep_detection_stage) & sleep_detection_stage > 0, 1, 0),
+                   date = as.Date(DateTime)) |>
+            group_by(date) |>
+            summarise(
+              SLEEP = sum(SLEEP, na.rm = TRUE),
+              .groups = "drop"
+            ) |>
+            # conver to hours instead of minutes
+            mutate(SLEEP = SLEEP / 60) |>
+            arrange(desc(date))
+
+          # Calculate weekly average of sleep
+          week_data_sleep <- df_sleep |>
+            mutate(week = format(date, "%W")) |>
+            group_by(week) |>
+            summarise(weekly_sleep = mean(SLEEP),
+                      date = max(date))
         } else {
           df_sleep <- NULL
         }
