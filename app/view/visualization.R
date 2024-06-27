@@ -402,8 +402,8 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
             nameLocation = "center",
             nameRotate = 90,
             nameGap = 30,
-            min = constants$app_config$visualisation$eda$yrange[1],
-            max = constants$app_config$visualisation$eda$yrange[2]
+            min = series_options()$EDA$yaxis_range[1],
+            max = series_options()$EDA$yaxis_range[2]
           ) |>
           e_datazoom(show = FALSE) |>
           e_tooltip(trigger = "axis") |>
@@ -417,7 +417,7 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
 
         chart <- functions_devices$create_echarts4r_events(chart,
                                                            annotatedata,
-                                                           yrange = constants$app_config$visualisation$eda$yrange)
+                                                           yrange = series_options()$EDA$yaxis_range)
 
         chart
 
@@ -453,8 +453,8 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
             nameLocation = "center",
             nameRotate = 90,
             nameGap = 30,
-            min = constants$app_config$visualisation$hr$yrange[1],
-            max = constants$app_config$visualisation$hr$yrange[2]
+            min = series_options()$HR$yaxis_range[1],
+            max = series_options()$HR$yaxis_range[2]
           ) |>
           e_datazoom(show = FALSE) |>
           e_tooltip(trigger = "axis") |>
@@ -468,7 +468,7 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
 
         chart <- functions_devices$create_echarts4r_events(chart,
                                                            annotatedata,
-                                                           yrange = constants$app_config$visualisation$hr$yrange)
+                                                           yrange = series_options()$HR$yaxis_range)
 
         chart
 
@@ -504,8 +504,8 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
             nameLocation = "center",
             nameRotate = 90,
             nameGap = 30,
-            min = constants$app_config$visualisation$temp$yrange[1],
-            max = constants$app_config$visualisation$temp$yrange[2]
+            min = series_options()$TEMP$yaxis_range[1],
+            max = series_options()$TEMP$yaxis_range[2]
           ) |>
           e_datazoom(show = FALSE) |>
           e_tooltip(trigger = "axis") |>
@@ -519,7 +519,7 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
 
         chart <- functions_devices$create_echarts4r_events(chart,
                                                            annotatedata,
-                                                           yrange = constants$app_config$visualisation$temp$yrange)
+                                                           yrange = series_options()$TEMP$yaxis_range)
 
         chart
 
@@ -555,8 +555,8 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
             nameLocation = "center",
             nameRotate = 90,
             nameGap = 30,
-            min = constants$app_config$visualisation$move[[device]][[r$type]]$yrange[1],
-            max = constants$app_config$visualisation$move[[device]][[r$type]]$yrange[2]
+            min = series_options()$MOVE$yaxis_range[1],
+            max = series_options()$MOVE$yaxis_range[2]
           ) |>
           e_datazoom(type = "slider") |>
           e_tooltip(trigger = "axis") |>
@@ -571,7 +571,7 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
 
         chart <- functions_devices$create_echarts4r_events(chart,
                                                            annotatedata,
-                                                           yrange = constants$app_config$visualisation$move[[device]][[r$type]]$yrange)
+                                                           yrange = series_options()$MOVE$yaxis_range)
 
         chart <- chart |>
           onRender(
