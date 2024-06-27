@@ -384,9 +384,16 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
           line_val <- series_options()$EDA$custom_y_val
         }
 
-        chart <- data$EDA |>
-          complete(DateTime = seq.Date(as.Date(min(DateTime)), as.Date(max(DateTime)), by = "1 day")) |>
-          arrange(DateTime) |>
+        # if less than 24 hours of data, don't complete data
+        if(r$more_than_24h){
+          data <- data$EDA |>
+            complete(DateTime = seq.Date(as.Date(min(DateTime)), as.Date(max(DateTime)), by = "1 day")) |>
+            arrange(DateTime)
+        } else {
+          data <- data$EDA
+        }
+
+        chart <- data |>
           e_charts(DateTime) |>
           e_line(EDA,
                  name = "EDA",
@@ -440,9 +447,16 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
           line_val <- series_options()$HR$custom_y_val
         }
 
-        chart <- data$HR |>
-          complete(DateTime = seq.Date(as.Date(min(DateTime)), as.Date(max(DateTime)), by = "1 day")) |>
-          arrange(DateTime) |>
+        # if less than 24 hours of data, don't complete data
+        if(r$more_than_24h){
+          data <- data$HR |>
+            complete(DateTime = seq.Date(as.Date(min(DateTime)), as.Date(max(DateTime)), by = "1 day")) |>
+            arrange(DateTime)
+        } else {
+          data <- data$HR
+        }
+
+        chart <- data |>
           e_charts(DateTime) |>
           e_line(HR,
                  name = "HR",
@@ -493,9 +507,16 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
           line_val <- series_options()$TEMP$custom_y_val
         }
 
-        chart <- data$TEMP |>
-          complete(DateTime = seq.Date(as.Date(min(DateTime)), as.Date(max(DateTime)), by = "1 day")) |>
-          arrange(DateTime) |>
+        # if less than 24 hours of data, don't complete data
+        if(r$more_than_24h){
+          data <- data$TEMP |>
+            complete(DateTime = seq.Date(as.Date(min(DateTime)), as.Date(max(DateTime)), by = "1 day")) |>
+            arrange(DateTime)
+        } else {
+          data <- data$TEMP
+        }
+
+        chart <- data |>
           e_charts(DateTime) |>
           e_line(TEMP,
                  name = "Temperature",
@@ -546,9 +567,16 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
           line_val <- series_options()$MOVE$custom_y_val
         }
 
-        chart <- data$MOVE |>
-          complete(DateTime = seq.Date(as.Date(min(DateTime)), as.Date(max(DateTime)), by = "1 day")) |>
-          arrange(DateTime) |>
+        # if less than 24 hours of data, don't complete data
+        if(r$more_than_24h){
+          data <- data$MOVE |>
+            complete(DateTime = seq.Date(as.Date(min(DateTime)), as.Date(max(DateTime)), by = "1 day")) |>
+            arrange(DateTime)
+        } else {
+          data <- data$MOVE
+        }
+
+        chart <- data |>
           e_charts(DateTime) |>
           e_line(MOVE,
                  name = "MOVE",
