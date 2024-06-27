@@ -266,22 +266,22 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
     })
 
 
-    # Option to plot tags onto plot.
-    # Only visible if there was a tags.csv file in the uploaded ZIP file.
-    have_tag_data <- reactive({
-      !is.null(data()$data$tags)
-    })
-
-    output$ui_plot_tags <- renderUI({
-      req(have_tag_data())
-
-      tagList(
-        tags$hr(),
-        radioButtons(session$ns("rad_plot_tags"), "Add tags to plot",
-                     choices = c("Yes","No"), inline = TRUE)
-      )
-
-    })
+    # # Option to plot tags onto plot.
+    # # Only visible if there was a tags.csv file in the uploaded ZIP file.
+    # have_tag_data <- reactive({
+    #   !is.null(data()$data$tags)
+    # })
+    #
+    # output$ui_plot_tags <- renderUI({
+    #   req(have_tag_data())
+    #
+    #   tagList(
+    #     tags$hr(),
+    #     radioButtons(session$ns("rad_plot_tags"), "Add tags to plot",
+    #                  choices = c("Yes","No"), inline = TRUE)
+    #   )
+    #
+    # })
 
 
     observe({
