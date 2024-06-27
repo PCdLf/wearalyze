@@ -169,6 +169,7 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
         hide("btn_update_dates")
         r$chosen_dates <- "All"
       }
+
     })
 
     observe({
@@ -238,11 +239,21 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
 
     output$ui_plot_agg_data <- renderUI({
 
-      if(data_range_hours() < 2){
+      if(data_range_hours() > 24){
+
+        if(r$more_than_2weeks) {
+          label <- "Aggregate data by 5 minutes"
+        } else {
+          label <- "Aggregate data by 1 minute"
+        }
+
         tagList(
           tags$hr(),
-          radioButtons(session$ns("rad_plot_agg"), "Aggregate data",
-                       choices = c("Yes","No"), inline = TRUE)
+          radioButtons(session$ns("rad_plot_agg"),
+                       label = label,
+                       choices = c("Yes","No"),
+                       inline = TRUE,
+                       selected = "Yes")
         )
 
       } else {
