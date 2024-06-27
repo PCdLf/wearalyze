@@ -26,7 +26,7 @@ box::use(
 )
 
 ui <- function(id){
-  
+
   ns <- NS(id)
   tagList(
     card(
@@ -38,19 +38,19 @@ ui <- function(id){
                  )
         ),
         fluidRow(
-          column(6, 
-                 
-                 tags$p("Run the signal analysis for the time period shown on the visualisation tab, 
+          column(6,
+
+                 tags$p("Run the signal analysis for the time period shown on the visualisation tab,
                                           or adjust the period with the menu on the right."),
                  tags$p("When the analysis is complete, you can download the report in a box below."),
-                 
-                 actionButton(ns("btn_do_analysis"), "Run analysis", class = "btn-success btn-lg", 
-                              icon = icon("calculator"))       
-                 
+
+                 actionButton(ns("btn_do_analysis"), "Run analysis", class = "btn-success btn-lg",
+                              icon = icon("calculator"))
+
           ),
           column(6,
                  tags$h4("Select begin date / time"),
-                 
+
                  functions$side_by_side(
                    dateInput(ns("date_analysis_start"), label = "Date",
                              value = NULL, min = NULL, max = NULL,
@@ -60,7 +60,7 @@ ui <- function(id){
                    numericInput(ns("time_second_start"), "Seconds", value = 0, width = 100, max = 60)
                  ),
                  tags$br(),
-                 
+
                  tags$h4("Select end date / time"),
                  functions$side_by_side(
                    dateInput(ns("date_analysis_end"), label = "Date",
@@ -70,12 +70,12 @@ ui <- function(id){
                    numericInput(ns("time_minute_end"), "Minutes", value = 0, width = 100, max = 60),
                    numericInput(ns("time_second_end"), "Seconds", value = 0, width = 100, max = 60)
                  )
-                 
+
           )
         )
       )
     ),
-    uiOutput(ns("ui_download_report")) 
+    uiOutput(ns("ui_download_report"))
   )
 }
 
@@ -84,18 +84,18 @@ ui <- function(id){
 
 server <- function(id, data = reactive(NULL), plots = reactive(NULL), calendar = reactive(NULL), device) {
   moduleServer(id, function(input, output, session) {
-    
+
     # Modules --------------------------------------
     helpButton$server("help", helptext = constants$help_config$analysis)
     helpButton$server("help-report", helptext = constants$help_config$report)
-    
+
     # Functionality --------------------------------
     observe({
-      
+
       data <- data()$data
-      
+
       req(nrow(data$EDA) >0)
-      
+
       tms <- range(data$EDA[[functions$get_datetime_column(data$EDA)]])
       updateDateInput(session, "date_analysis_start",
                       value = min(as.Date(tms)),
@@ -107,33 +107,33 @@ server <- function(id, data = reactive(NULL), plots = reactive(NULL), calendar =
                       min = min(as.Date(tms)),
                       max = max(as.Date(tms))
       )
-      
+
       updateNumericInput(session, "time_hour_start",
                          value = hour(min(tms)), min = 0, max = 23)
       updateNumericInput(session, "time_hour_end",
                          value = hour(max(tms)), min = 0, max = 23)
-      
+
       updateNumericInput(session, "time_minute_start",
                          value = minute(min(tms)), min = 0, max = 59)
       updateNumericInput(session, "time_minute_end",
                          value = minute(max(tms)), min = 0, max = 59)
-      
+
       updateNumericInput(session, "time_second_start",
                          value = second(min(tms)), min = 0, max = 59)
       updateNumericInput(session, "time_second_end",
                          value = second(max(tms)), min = 0, max = 59)
-      
-      
+
+
     })
-    
-    
+
+
     last_analysis <- reactiveVal()
-    
+
     observe({
-      
-      toastr_warning("Analysis started - please be patient, this can take a minute or longer", 
+
+      toastr_warning("Analysis started - please be patient, this can take a minute or longer",
                      timeOut = 3000)
-      
+
       start <- ISOdatetime(
         year = year(input$date_analysis_start),
         month = month(input$date_analysis_start),
@@ -143,7 +143,7 @@ server <- function(id, data = reactive(NULL), plots = reactive(NULL), calendar =
         sec = input$time_second_start,
         tz = "UTC"
       )
-      
+
       end <- ISOdatetime(
         year = year(input$date_analysis_end),
         month = month(input$date_analysis_end),
@@ -153,11 +153,11 @@ server <- function(id, data = reactive(NULL), plots = reactive(NULL), calendar =
         sec = input$time_second_end,
         tz = "UTC"
       )
-      
+
       data <- data()$data
-      
+
       data <- filter_datetime(data, start, end)
-      
+
       switch(device,
              e4 = {
                analysis_out <- process_e4(data)
@@ -170,18 +170,18 @@ server <- function(id, data = reactive(NULL), plots = reactive(NULL), calendar =
                analysis_out <- process_nowatch(data)
              }
       )
-      
+
       last_analysis(
         analysis_out
       )
-      
+
     }) |> bindEvent(input$btn_do_analysis)
-    
-    
-    
+
+
+
     output$ui_download_report <- renderUI({
       req(last_analysis())
-      
+
       card(
         card_header("Report"),
         card_body(
@@ -197,28 +197,33 @@ server <- function(id, data = reactive(NULL), plots = reactive(NULL), calendar =
         )
       )
     })
-    
+
     output$btn_download_report <- downloadHandler(
-      
+
       filename = paste0(device, "_analysis.html"),
-      
+
       content = function(file){
-        
+
         toastr_info("Download in preparation ...")
         tempReport <- file.path(tempdir(), "report.Rmd")
         file.copy("./app/static/reports/report.Rmd", tempReport, overwrite = TRUE)
-        
+
         analysis <- last_analysis()
         calendar <- calendar()
-        plots <- plots()
-        
+        plots <- list(
+          dailygraph1 = plots$dailygraphs1(),
+          dailygraph2 = plots$dailygraphs2(),
+          dailygraph3 = plots$dailygraphs3(),
+          dailygraph4 = plots$dailygraphs4()
+        )
+
         render(tempReport, output_file = file)
-        
+
       }
-      
+
     )
-    
+
   })
-  
+
 }
 

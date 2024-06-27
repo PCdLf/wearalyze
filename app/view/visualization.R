@@ -148,7 +148,10 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
   moduleServer(id, function(input, output, session) {
 
     # Reactive values -------------------------------
-    plot_output <- reactiveVal()
+    dailygraphs1 <- reactiveVal()
+    dailygraphs2 <- reactiveVal()
+    dailygraphs3 <- reactiveVal()
+    dailygraphs4 <- reactiveVal()
 
     # Modules ---------------------------------------
     helpButton$server("help", helptext = constants$help_config$visualization)
@@ -368,6 +371,9 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
         return datestring
       }')
 
+      # create empty list for plots
+      plot_list <- list()
+
       output$daily_graphs1 <- renderEcharts4r({
 
         req(data$EDA)
@@ -418,6 +424,9 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
         chart <- functions_devices$create_echarts4r_events(chart,
                                                            annotatedata,
                                                            yrange = series_options()$EDA$yaxis_range)
+
+
+        dailygraphs1(chart)
 
         chart
 
@@ -470,6 +479,8 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
                                                            annotatedata,
                                                            yrange = series_options()$HR$yaxis_range)
 
+        dailygraphs2(chart)
+
         chart
 
       })
@@ -520,6 +531,8 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
         chart <- functions_devices$create_echarts4r_events(chart,
                                                            annotatedata,
                                                            yrange = series_options()$TEMP$yaxis_range)
+
+        dailygraphs3(chart)
 
         chart
 
@@ -587,6 +600,8 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
                });
             }", session$ns("datazoom_bounds"))
           )
+
+        dailygraphs4(chart)
 
         chart
 
@@ -1025,7 +1040,12 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
 
     })
 
-    return(plot_output)
+    return(list(
+      dailygraphs1 = dailygraphs1,
+      dailygraphs2 = dailygraphs2,
+      dailygraphs3 = dailygraphs3,
+      dailygraphs4 = dailygraphs4
+    ))
 
   })
 }

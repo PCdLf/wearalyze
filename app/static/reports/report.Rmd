@@ -22,16 +22,7 @@ plots[[2]]
 
 plots[[3]] 
 
-plots[[4]] |> 
-  dyRangeSelector(dateWindow =
-                    c(range(
-                      analysis$data$EDA[[functions$get_datetime_column(analysis$data$EDA)]]
-                      )[1],
-                      range(
-                        analysis$data$EDA[[functions$get_datetime_column(analysis$data$EDA)]]
-                      )[2])
-                  )
-
+plots[[4]]
 
 ```
 
