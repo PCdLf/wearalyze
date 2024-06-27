@@ -12,7 +12,7 @@ box::use(
   htmlwidgets[JS, onRender],
   lubridate[ymd_hms],
   scales[rescale],
-  shiny[actionButton, bindEvent, br, checkboxInput, column, fluidRow, hr,
+  shiny[actionButton, bindEvent, br, checkboxInput, column, div, fluidRow, hr,
         icon, isTruthy, moduleServer, NS, observe, radioButtons,
         reactive, reactiveVal, renderUI, req, tagList, tags, textInput, uiOutput,
         updateActionButton, p, tagAppendAttributes],
@@ -960,16 +960,29 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
     })
 
     output$echarts_notes <- renderUI({
+      if (r$more_than_2weeks == TRUE) {
+        week_comment <- "Note: the data is aggregated by 5 minutes as it contains more than 2 weeks of data."
+      } else {
+        week_comment <- ""
+      }
       if (device == "embrace-plus"&& r$type == "raw") {
-        p("Note: the Embrace Plus device does not have HR per second
+        device_comment <- "Note: the Embrace Plus device does not have HR per second
           available when data is in raw format. The aggregated HR is available
-          from the digital biomarkers and the BVP signal is available from the raw data.")
+          from the digital biomarkers and the BVP signal is available from the raw data."
       } else if (device == "embrace-plus" && r$type == "aggregated") {
-        p("Note: the aggregated data of the Embrace Plus device uses
+        device_comment <- "Note: the aggregated data of the Embrace Plus device uses
           the standard deviation of the accelerometer readings in terms of gravitational force (g)
           as a proxy for movement. This differs from the
-          raw data, that uses the geometric mean acceleration.")
+          raw data, that uses the geometric mean acceleration."
+      } else {
+        device_comment <- ""
       }
+
+      # render as div with paragraphs
+      div(p(device_comment),
+          br(),
+          p(week_comment)
+      )
     })
 
 

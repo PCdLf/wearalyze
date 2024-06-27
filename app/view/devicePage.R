@@ -64,7 +64,8 @@ server <- function(id, device) {
     r <- reactiveValues(
       device = NULL,
       type = ifelse(constants$device_config[[device]]$aggregated, "aggregated", "raw"),
-      more_than_24h = FALSE
+      more_than_24h = FALSE,
+      more_than_2weeks = FALSE
     )
 
     # Modules ---------------------------------------

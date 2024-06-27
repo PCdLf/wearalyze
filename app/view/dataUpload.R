@@ -7,7 +7,7 @@ box::use(
         renderUI, req, reactive, incProgress],
   shinyFiles[shinyDirButton, shinyDirChoose],
   shinyjs[disable, enable, hidden, hide, show],
-  shinytoastr[toastr_success, toastr_error],
+  shinytoastr[toastr_info, toastr_success, toastr_error],
   stats[runif],
   stringr[str_to_title],
   wearables[aggregate_e4_data, aggregate_embrace_plus_data, aggregate_nowatch_data,
@@ -197,6 +197,9 @@ server <- function(id, device, r) {
 
       req(input$select_folder)
 
+      toastr_info("Processing your data... Please wait!")
+      disable("select_folder")
+
       if(length(input$select_folder) > 1){
         # if windows, use \, otherwise use /
         if (.Platform$OS.type == "windows") {
@@ -260,6 +263,8 @@ server <- function(id, device, r) {
 
       req(rv$zip_files)
 
+      disable("select_zip_files")
+
       # Read selected ZIP files
       fns <- rv$zip_files$datapath
       fn_names <- rv$zip_files$name
@@ -304,27 +309,36 @@ server <- function(id, device, r) {
           switch(device,
                  e4 = {
                    rv$data <- rbind_e4(data)
-                   rv$data_agg <- aggregate_e4_data(rv$data)
                  },
                  `embrace-plus` = {
                    rv$data <- rbind_embrace_plus(data[[1]])
-                   rv$data_agg <- aggregate_embrace_plus_data(rv$data)
                  },
                  nowatch = {
                    rv$data <- rbind_nowatch(data)
-                   rv$data_agg <- aggregate_nowatch_data(rv$data)
+                 })
+
+          if (device == "nowatch") {
+            min_date <- min(rv$data$HR$DateTime)
+            max_date <- max(rv$data$HR$DateTime)
+          } else {
+            min_date <- min(rv$data$EDA$DateTime)
+            max_date <- max(rv$data$EDA$DateTime)
+          }
+          r$more_than_24h <- difftime(max_date, min_date, units = "hours") > 24
+          r$more_than_2weeks <- difftime(max_date, min_date, units = "weeks") > 2
+
+          switch(device,
+                 e4 = {
+                   rv$data_agg <- aggregate_e4_data(rv$data)
+                 },
+                 `embrace-plus` = {
+                   rv$data_agg <- aggregate_embrace_plus_data(rv$data, interval = ifelse(r$more_than_2weeks, "5 min", "1 min"))
+                 },
+                 nowatch = {
+                   rv$data_agg <- aggregate_nowatch_data(rv$data, interval = ifelse(r$more_than_2weeks, "5 min", "1 min"))
                  })
 
           rv$newdata <- runif(1)
-
-          if (device == "nowatch") {
-            min_date <- min(rv$data_agg$HR$DateTime)
-            max_date <- max(rv$data_agg$HR$DateTime)
-          } else {
-            min_date <- min(rv$data_agg$EDA$DateTime)
-            max_date <- max(rv$data_agg$EDA$DateTime)
-          }
-          r$more_than_24h <- difftime(max_date, min_date, units = "hours") > 24
 
           # Message: data read!
           toastr_success("Data read successfully.")
@@ -340,6 +354,7 @@ server <- function(id, device, r) {
           show("div_restart_application")
           enable("btn_use_example_data_small")
           enable("btn_use_example_data_large")
+          enable("select_zip_files")
 
         } else {
 
@@ -377,26 +392,37 @@ server <- function(id, device, r) {
                `embrace-plus` = {
                  rv$data <- out
                  if (rv$aggregated) {
-                   rv$data_agg <- aggregate_embrace_plus_data(rv$data)
+                   rv$data <- out
                  } else {
                    rv$data <- rbind_embrace_plus(rv$data)
-                   rv$data_agg <- aggregate_embrace_plus_data(rv$data)
                  }
                },
                nowatch = {
                  rv$data <- out
-                 rv$data_agg <- aggregate_nowatch_data(rv$data)
                })
 
         # Get min and max date, and determine whether or not there's more than 24 hours
         if (device == "nowatch") {
-          min_date <- min(rv$data_agg$HR$DateTime)
-          max_date <- max(rv$data_agg$HR$DateTime)
+          min_date <- min(rv$data$HR$DateTime)
+          max_date <- max(rv$data$HR$DateTime)
         } else {
-          min_date <- min(rv$data_agg$EDA$DateTime)
-          max_date <- max(rv$data_agg$EDA$DateTime)
+          min_date <- min(rv$data$EDA$DateTime)
+          max_date <- max(rv$data$EDA$DateTime)
         }
         r$more_than_24h <- difftime(max_date, min_date, units = "hours") > 24
+        r$more_than_2weeks <- difftime(max_date, min_date, units = "weeks") > 2
+
+        switch(device,
+               `embrace-plus` = {
+                 if (rv$aggregated) {
+                   rv$data_agg <- aggregate_embrace_plus_data(rv$data, interval = ifelse(r$more_than_2weeks, "5 min", "1 min"))
+                 } else {
+                   rv$data_agg <- aggregate_embrace_plus_data(rv$data, interval = ifelse(r$more_than_2weeks, "5 min", "1 min"))
+                 }
+               },
+               nowatch = {
+                 rv$data_agg <- aggregate_nowatch_data(rv$data, interval = ifelse(r$more_than_2weeks, "5 min", "1 min"))
+               })
 
         rv$newdata <- runif(1)
 
@@ -414,6 +440,7 @@ server <- function(id, device, r) {
         show("div_restart_application")
         enable("btn_use_example_data_small")
         enable("btn_use_example_data_large")
+        enable("select_folder")
       }
     }) |> bindEvent(rv$folder)
 
