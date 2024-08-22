@@ -28,6 +28,7 @@ box::use(
   app/logic/constants,
   app/logic/functions,
   app/logic/functions_devices,
+  app/logic/stress_algorithm/predict_stress,
   app/view/components/helpButton,
   app/view/components/visSeriesOptions
 )
@@ -130,6 +131,13 @@ ui <- function(id) {
       ),
 
       nav_panel(
+        title = "Stress Algorithm",
+        icon = icon("chart-bar"),
+        value = ns("plottab3"),
+        echarts4rOutput(ns("stress_algorithm_plot"), height = "600px")
+      ),
+
+      nav_panel(
         title = "Annotations",
         icon = icon("list-ol"),
         value = ns("plotannotations"),
@@ -152,6 +160,13 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
     dailygraphs2 <- reactiveVal()
     dailygraphs3 <- reactiveVal()
     dailygraphs4 <- reactiveVal()
+
+    # Constants -------------------------------------
+    yearMonthDate <- JS('function (value) {
+        var d = new Date(value);
+        var datestring = d.getFullYear() + "-" + ("0"+(d.getMonth()+1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2)
+        return datestring
+      }')
 
     # Modules ---------------------------------------
     helpButton$server("help", helptext = constants$help_config$visualization)
@@ -364,12 +379,6 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
           data$MOVE <- data.frame(data$ACT$DateTime, MOVE = NA)
         }
       }
-
-      yearMonthDate <- JS('function (value) {
-        var d = new Date(value);
-        var datestring = d.getFullYear() + "-" + ("0"+(d.getMonth()+1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2)
-        return datestring
-      }')
 
       # create empty list for plots
       plot_list <- list()
@@ -778,12 +787,6 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
         summarise(weekly_activity_time = mean(activity_time),
                   date = max(date))
 
-      yearMonthDate <- htmlwidgets::JS('function (value) {
-        var d = new Date(value);
-        var datestring = d.getFullYear() + "-" + ("0"+(d.getMonth()+1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2)
-        return datestring
-      }')
-
       if ("STRESS" %in% names(data)) {
         df_stress <- data$STRESS |>
           group_by(DateTime = lubridate::floor_date(DateTime, "1 hour")) |>
@@ -1067,6 +1070,76 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
         datatable(width = 500)
 
     })
+
+    output$stress_algorithm_plot <- renderEcharts4r({
+
+      req(data())
+
+      data <- predict_stress$return_predictions(data()$data, types = c("TEMP", "MOVE", "EDA", "HR"))
+
+      # combine into one dataframe, with DateTime as index
+      # only join datasets if they are available (not NULL)
+      plot_data <- data.frame(DateTime = data$TEMP$DateTime)
+      for (type in c("TEMP", "MOVE", "EDA", "HR")) {
+        if (!is.null(data[[type]])) {
+          plot_data <- plot_data |> left_join(data[[type]], by = "DateTime")
+        } else {
+          plot_data[[type]] <- NA
+        }
+      }
+
+      chart <- plot_data |>
+        e_charts(DateTime) |>
+        e_line(TEMP,
+               name = "TEMP",
+               symbol = "none",
+               lineStyle = list(
+                 width = 1,
+                 color = constants$app_config$visualisation$temp$color
+               )) |>
+        e_line(MOVE,
+               name = "MOVE",
+               symbol = "none",
+               lineStyle = list(
+                 width = 1,
+                 color = constants$app_config$visualisation$move[[device]][[r$type]]$color
+               )) |>
+        e_line(EDA,
+               name = "EDA",
+               symbol = "none",
+               lineStyle = list(
+                 width = 1,
+                 color = constants$app_config$visualisation$eda$color
+               )) |>
+        e_line(HR,
+               name = "HR",
+               symbol = "none",
+               lineStyle = list(
+                 width = 1,
+                 color = constants$app_config$visualisation$hr$color
+               )) |>
+        e_x_axis(
+          axisPointer = list(show = TRUE),
+          axisLabel = list(
+            formatter = yearMonthDate
+          )
+        ) |>
+        e_y_axis(
+          name = "Predicted Stress Level",
+          nameLocation = "center",
+          nameRotate = 90,
+          nameGap = 30,
+          min = 0,
+          max = 10
+        ) |>
+        e_datazoom(type = "slider") |>
+        e_tooltip(trigger = "axis") |>
+        e_legend(show = FALSE)
+
+      chart
+
+    })
+
 
     return(list(
       dailygraphs1 = dailygraphs1,

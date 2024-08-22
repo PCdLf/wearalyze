@@ -20,4 +20,8 @@ library(shinyFiles)
 library(sever)
 library(echarts4r)
 library(tidyr)
+library(caret)
+library(randomForest)
+library(lubridate)
+library(zoo)
 
