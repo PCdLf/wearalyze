@@ -121,6 +121,7 @@ ui <- function(id) {
             )
           )
         ),
+        # Either the stress algorithm spinner is shown, or the daily graphs 1 spinner
         withSpinner(
           id = ns("stress_algorithm_plot_spinner"),
           echarts4rOutput(ns("stress_algorithm_plot"), height = "220px")
@@ -129,9 +130,19 @@ ui <- function(id) {
           id = ns("daily_graphs1_spinner"),
           echarts4rOutput(ns("daily_graphs1"), height = "220px"),
         ),
-        echarts4rOutput(ns("daily_graphs2"), height = "220px"),
-        echarts4rOutput(ns("daily_graphs3"), height = "220px"),
-        echarts4rOutput(ns("daily_graphs4"), height = "220px"),
+        # Add spinner, but don't show, this gives a better loading UX
+        withSpinner(
+          type = 0,
+          echarts4rOutput(ns("daily_graphs2"), height = "220px"),
+        ),
+        withSpinner(
+          type = 0,
+          echarts4rOutput(ns("daily_graphs3"), height = "220px"),
+        ),
+        withSpinner(
+          type = 0,
+          echarts4rOutput(ns("daily_graphs4"), height = "220px"),
+        ),
         uiOutput(ns("echarts_notes"))
       ),
 
@@ -393,7 +404,13 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
         req(data())
 
         if (input$incl_stress_algorithm) {
+
+          toastr_info("Applying stress algorithm 🚀")
+
           data <- predict_stress$return_predictions(data()$data, types = c("TEMP", "MOVE", "EDA", "HR"))
+
+          toastr_success("Got predictions!")
+          toastr_info("Rendering graphs...")
 
           # combine into one dataframe, with DateTime as index
           # only join datasets if they are available (not NULL)
@@ -733,7 +750,6 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
 
       })
 
-      toastr_success("Done!")
       updateActionButton(session, "btn_make_plot", label = "Update plot", icon = icon("sync"))
 
       if(r$type == "raw" && device == "e4"){
