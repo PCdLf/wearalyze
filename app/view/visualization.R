@@ -85,7 +85,14 @@ ui <- function(id) {
 
                  tags$div(id = ns("move_options"),
                           tags$h4("MOVE"),
-                          uiOutput(ns("ui_move")))
+                          uiOutput(ns("ui_move")),
+                          tags$hr()),
+
+                 tags$div(id = ns("stress_options"),
+                          tags$h4("STRESS ALGORITHM"),
+                          checkboxInput(ns("incl_stress_algorithm"),
+                                        "Include stress algorithm",
+                                        value = TRUE))
           )
         )
 
@@ -115,6 +122,11 @@ ui <- function(id) {
           )
         ),
         withSpinner(
+          id = ns("stress_algorithm_plot_spinner"),
+          echarts4rOutput(ns("stress_algorithm_plot"), height = "220px")
+        ),
+        withSpinner(
+          id = ns("daily_graphs1_spinner"),
           echarts4rOutput(ns("daily_graphs1"), height = "220px"),
         ),
         echarts4rOutput(ns("daily_graphs2"), height = "220px"),
@@ -128,13 +140,6 @@ ui <- function(id) {
         icon = icon("chart-bar"),
         value = ns("plottab2"),
         uiOutput(ns("problemtarget_plots"))
-      ),
-
-      nav_panel(
-        title = "Stress Algorithm",
-        icon = icon("chart-bar"),
-        value = ns("plottab3"),
-        echarts4rOutput(ns("stress_algorithm_plot"), height = "600px")
       ),
 
       nav_panel(
@@ -383,6 +388,90 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
       # create empty list for plots
       plot_list <- list()
 
+      output$stress_algorithm_plot <- renderEcharts4r({
+
+        req(data())
+
+        if (input$incl_stress_algorithm) {
+          data <- predict_stress$return_predictions(data()$data, types = c("TEMP", "MOVE", "EDA", "HR"))
+
+          # combine into one dataframe, with DateTime as index
+          # only join datasets if they are available (not NULL)
+          plot_data <- data.frame(DateTime = data$TEMP$DateTime)
+          for (type in c("TEMP", "MOVE", "EDA", "HR")) {
+            if (!is.null(data[[type]])) {
+              plot_data <- plot_data |> left_join(data[[type]], by = "DateTime")
+            } else {
+              plot_data[[type]] <- NA
+            }
+          }
+
+          chart <- plot_data |>
+            e_charts(DateTime) |>
+            e_line(TEMP,
+                   name = "TEMP",
+                   symbol = "none",
+                   color = constants$app_config$visualisation$temp$color,
+                   lineStyle = list(
+                     width = 1
+                   )) |>
+            e_line(MOVE,
+                   name = "MOVE",
+                   symbol = "none",
+                   color = constants$app_config$visualisation$move[[device]][[r$type]]$color,
+                   lineStyle = list(
+                     width = 1
+                   )) |>
+            e_line(EDA,
+                   name = "EDA",
+                   symbol = "none",
+                   color = constants$app_config$visualisation$eda$color,
+                   lineStyle = list(
+                     width = 1
+                   )) |>
+            e_line(HR,
+                   name = "HR",
+                   symbol = "none",
+                   color = constants$app_config$visualisation$hr$color,
+                   lineStyle = list(
+                     width = 1
+                   )) |>
+            e_x_axis(
+              axisPointer = list(show = TRUE),
+              axisLabel = list(
+                formatter = yearMonthDate
+              )
+            ) |>
+            e_y_axis(
+              name = "Predicted Stress Level",
+              nameLocation = "center",
+              nameRotate = 90,
+              nameGap = 30,
+              min = 0,
+              max = 10
+            ) |>
+            e_datazoom(show = FALSE) |>
+            e_tooltip(trigger = "axis") |>
+            e_legend(show = TRUE) |>
+            e_group("daily") |>
+            e_grid(
+              top = 60,
+              bottom = 20
+            )
+
+          chart <- functions_devices$create_echarts4r_events(chart,
+                                                             annotatedata,
+                                                             yrange = c(0, 10))
+
+          chart
+
+        } else {
+          NULL
+        }
+
+      })
+
+
       output$daily_graphs1 <- renderEcharts4r({
 
         req(data$EDA)
@@ -407,9 +496,9 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
           e_line(EDA,
                  name = "EDA",
                  symbol = "none",
+                 color = constants$app_config$visualisation$eda$color,
                  lineStyle = list(
-                   width = 1,
-                   color = constants$app_config$visualisation$eda$color
+                   width = 1
                  )) |>
           e_title(input$txt_plot_main_title,
                   left = "40%") |>
@@ -470,9 +559,9 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
           e_line(HR,
                  name = "HR",
                  symbol = "none",
+                 color = constants$app_config$visualisation$hr$color,
                  lineStyle = list(
-                   width = 1,
-                   color = constants$app_config$visualisation$hr$color
+                   width = 1
                  )) |>
           e_x_axis(
             axisPointer = list(show = TRUE),
@@ -530,9 +619,9 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
           e_line(TEMP,
                  name = "Temperature",
                  symbol = "none",
+                 color = constants$app_config$visualisation$temp$color,
                  lineStyle = list(
-                   width = 1,
-                   color = constants$app_config$visualisation$temp$color
+                   width = 1
                  )) |>
           e_x_axis(
             axisPointer = list(show = TRUE),
@@ -590,9 +679,9 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
           e_line(MOVE,
                  name = "MOVE",
                  symbol = "none",
+                 color = constants$app_config$visualisation$move[[device]][[r$type]]$color,
                  lineStyle = list(
-                   width = 1,
-                   color = constants$app_config$visualisation$move[[device]][[r$type]]$color
+                   width = 1
                  )) |>
           e_x_axis(
             axisPointer = list(show = TRUE),
@@ -653,6 +742,20 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
       }
 
     }) |> bindEvent(c(input$btn_make_plot, input$btn_update_dates))
+
+    observe({
+
+      if (input$incl_stress_algorithm) {
+        show("stress_algorithm_plot")
+        show("stress_algorithm_plot_spinner")
+        hide("daily_graphs1_spinner")
+      } else {
+        hide("stress_algorithm_plot")
+        hide("stress_algorithm_plot_spinner")
+        show("daily_graphs1_spinner")
+      }
+
+    }) |> bindEvent(input$incl_stress_algorithm)
 
     output$problemtarget_plots <- renderUI({
 
@@ -1030,7 +1133,8 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
         device_comment <- "Note: the aggregated data of the Embrace Plus device uses
           the standard deviation of the accelerometer readings in terms of gravitational force (g)
           as a proxy for movement. This differs from the
-          raw data, that uses the geometric mean acceleration."
+          raw data, that uses the geometric mean acceleration. Currently, the stress algorithmworkswith
+          geometric mean acceleration only."
       } else {
         device_comment <- ""
       }
@@ -1040,24 +1144,6 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
           br(),
           p(week_comment)
       )
-    })
-
-
-    observe({
-
-      show("thispanel")
-
-    }) |> bindEvent(input$btn_panel_float)
-
-    output$dt_panel_annotations <- renderDT({
-
-      current_visible_annotations() |>
-        mutate(Date = format(Date, "%Y-%m-%d"),
-               Start = format(Start, "%H:%M:%S"),
-               End = format(End, "%H:%M:%S")
-        ) |>
-        datatable(width = 500)
-
     })
 
     output$dt_annotations_visible <- renderDT({
@@ -1070,76 +1156,6 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
         datatable(width = 500)
 
     })
-
-    output$stress_algorithm_plot <- renderEcharts4r({
-
-      req(data())
-
-      data <- predict_stress$return_predictions(data()$data, types = c("TEMP", "MOVE", "EDA", "HR"))
-
-      # combine into one dataframe, with DateTime as index
-      # only join datasets if they are available (not NULL)
-      plot_data <- data.frame(DateTime = data$TEMP$DateTime)
-      for (type in c("TEMP", "MOVE", "EDA", "HR")) {
-        if (!is.null(data[[type]])) {
-          plot_data <- plot_data |> left_join(data[[type]], by = "DateTime")
-        } else {
-          plot_data[[type]] <- NA
-        }
-      }
-
-      chart <- plot_data |>
-        e_charts(DateTime) |>
-        e_line(TEMP,
-               name = "TEMP",
-               symbol = "none",
-               lineStyle = list(
-                 width = 1,
-                 color = constants$app_config$visualisation$temp$color
-               )) |>
-        e_line(MOVE,
-               name = "MOVE",
-               symbol = "none",
-               lineStyle = list(
-                 width = 1,
-                 color = constants$app_config$visualisation$move[[device]][[r$type]]$color
-               )) |>
-        e_line(EDA,
-               name = "EDA",
-               symbol = "none",
-               lineStyle = list(
-                 width = 1,
-                 color = constants$app_config$visualisation$eda$color
-               )) |>
-        e_line(HR,
-               name = "HR",
-               symbol = "none",
-               lineStyle = list(
-                 width = 1,
-                 color = constants$app_config$visualisation$hr$color
-               )) |>
-        e_x_axis(
-          axisPointer = list(show = TRUE),
-          axisLabel = list(
-            formatter = yearMonthDate
-          )
-        ) |>
-        e_y_axis(
-          name = "Predicted Stress Level",
-          nameLocation = "center",
-          nameRotate = 90,
-          nameGap = 30,
-          min = 0,
-          max = 10
-        ) |>
-        e_datazoom(type = "slider") |>
-        e_tooltip(trigger = "axis") |>
-        e_legend(show = FALSE)
-
-      chart
-
-    })
-
 
     return(list(
       dailygraphs1 = dailygraphs1,

@@ -1,7 +1,9 @@
 
 box::use(
+  caret,
   dplyr[filter, mutate, select, across, everything],
   lubridate[hour, wday, month],
+  randomForest,
   stats[sd, predict],
   zoo[rollapply]
 )
