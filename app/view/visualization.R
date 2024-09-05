@@ -438,6 +438,8 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
                    lineStyle = list(
                      width = 1
                    )) |>
+            e_title(input$txt_plot_main_title,
+                    left = "50%") |>
             e_x_axis(
               axisPointer = list(show = TRUE),
               axisLabel = list(
@@ -492,8 +494,9 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
                  lineStyle = list(
                    width = 1
                  )) |>
-          e_title(input$txt_plot_main_title,
-                  left = "40%") |>
+          # If there is a stress algorith plot, don't show title here
+          e_title(ifelse(input$incl_stress_algorithm, "", input$txt_plot_main_title),
+                  left = "50%") |>
           e_x_axis(
             axisPointer = list(show = TRUE),
             axisLabel = list(
