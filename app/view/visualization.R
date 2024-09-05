@@ -40,6 +40,7 @@ ui <- function(id) {
   tagList(
     navset_tab(
       id = ns("tabs"),
+      # Settings -------------------------------------
       nav_panel(
         title = "Settings",
         icon = icon("cogs"),
@@ -98,6 +99,7 @@ ui <- function(id) {
 
       ),
 
+      # Daily graphs ---------------------------------
       nav_panel(
         title = "Daily",
         icon = icon("chart-bar"),
@@ -146,6 +148,7 @@ ui <- function(id) {
         uiOutput(ns("echarts_notes"))
       ),
 
+      # Problem target behaviour --------------------
       nav_panel(
         title = "Target Behaviour",
         icon = icon("chart-bar"),
@@ -153,6 +156,7 @@ ui <- function(id) {
         uiOutput(ns("problemtarget_plots"))
       ),
 
+      # Annotations ---------------------------------
       nav_panel(
         title = "Annotations",
         icon = icon("list-ol"),
@@ -251,6 +255,8 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
         hide("hr_options")
       }
 
+      # Different datasets have different names for movement data
+      # if no match was found, hide move options.
       if (!"ACC" %in% names(data()$data) &&
           !"MOVE" %in% names(data()$data) &&
           !"ACCELEROMETERS-STD" %in% names(data()$data) &&
@@ -264,6 +270,8 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
 
       if(r$more_than_24h){
 
+        # Aggregating by 5 minutes in case of large data will speed
+        # up the rendering of the plot significantly
         if(r$more_than_2weeks) {
           label <- "Aggregate data by 5 minutes"
         } else {
@@ -296,7 +304,7 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
 
       toastr_info("Plot construction started...")
 
-      # Precalc. timeseries (for viz.)
+      # Use aggregated data if needed
       if (is.null(input$rad_plot_agg) || input$rad_plot_agg == "Yes") {
         data <- data$data_agg
       } else {
@@ -795,7 +803,6 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
       req(data)
       req(problemtarget())
 
-      # Precalc. timeseries (for viz.)
       if (is.null(input$rad_plot_agg) || input$rad_plot_agg == "Yes") {
         data <- data$data_agg
       } else {
@@ -804,6 +811,8 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
 
       functions$show_tab(ns("plottab2"))
 
+      # Different devices have different data that can be used
+      # for an indication of movement
       if ("ACTIVITY-COUNTS" %in% names(data)) {
         data$MOVE <- data$`ACTIVITY-COUNTS`
       } else if ("COUNT" %in% names(data)) {
@@ -814,7 +823,7 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
       }
 
       # Group move data by 1 hour
-      df <- data$MOVE |>
+      df_activity <- data$MOVE |>
         mutate(active = ifelse(!is.na(activity_counts) & activity_counts > 0, 1, 0)) |>
         group_by(DateTime = lubridate::floor_date(DateTime, "1 hour")) |>
         summarise(
@@ -832,7 +841,7 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
         arrange(desc(DateTime))
 
       # Calculate weekly average of activity time
-      week_data <- df |>
+      week_data <- df_activity |>
         group_by(date) |>
         mutate(activity_time = sum(activity_time, na.rm = TRUE)) |>
         ungroup() |>
@@ -853,6 +862,11 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
       }
 
       if ("SLEEP" %in% names(data)) {
+        # Different devices have different data for sleep
+        # Two options:
+        # 1. There's a start and end time, and sleep time has to be calculated
+        # 2. There are sleep detection stages available, and every minute in
+        #    a stage (>0) counts as an minute slept.
         if ("start_timestamp" %in% names(data$SLEEP)) {
           df_sleep <- data$SLEEP |>
             mutate(start_timestamp = as.POSIXct(start_timestamp, origin = "1970-01-01", tz = "UTC"),
@@ -902,7 +916,7 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
       }
 
       output$echarts_problemtarget_act_level <- renderEcharts4r({
-        df |>
+        df_activity |>
           e_charts(hour) |>
           e_heatmap(date, activity_level, label = list(show = TRUE)) |>
           e_y_axis(name = "Date") |>
@@ -913,7 +927,7 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
       })
 
       output$echarts_problemtarget_act_time <- renderEcharts4r({
-        df |>
+        df_activity |>
           group_by(date) |>
           summarise(activity_time = sum(activity_time, na.rm = TRUE)) |>
           arrange(desc(date)) |>
@@ -947,9 +961,9 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
 
       output$echarts_problemtarget_behaviour <- renderEcharts4r({
 
-        title <- setdiff(df$`Problem or Target Behavior` |> unique(), NA)
+        title <- setdiff(df_activity$`Problem or Target Behavior` |> unique(), NA)
 
-        df |>
+        df_activity |>
           group_by(date) |>
           summarise(score = mean(Score, na.rm = TRUE)) |>
           arrange(desc(date)) |>
@@ -1010,7 +1024,9 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
       })
 
       output$echarts_problemtarget_sleep <- renderEcharts4r({
+
         req(df_sleep)
+
         df_sleep |>
           group_by(date) |>
           summarise(SLEEP = sum(SLEEP, na.rm = TRUE)) |>
@@ -1051,8 +1067,7 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
     current_visible_annotations <- reactive({
 
       if (!is.null(input$datazoom_bounds)) {
-        print(input$datazoom_bounds)
-        # !!!! WATCH THE TIMEZONE!
+        # !! WATCH THE TIMEZONE !!
         # Problem: cannot read timezone info from rv$calendar$Start, should
         # be saved there (as tzone attribute) when reading calendar
         ran <- suppressWarnings({
@@ -1110,6 +1125,8 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
     })
 
     # Return values -------------------------------
+    # These return values are used in the analysis section of the
+    # application. Only applicable for the "legacy" E4 device.
     return(list(
       dailygraphs1 = dailygraphs1,
       dailygraphs2 = dailygraphs2,
