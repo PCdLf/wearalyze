@@ -85,6 +85,9 @@ ui <- function(id){
 server <- function(id, data = reactive(NULL), plots = reactive(NULL), calendar = reactive(NULL), device) {
   moduleServer(id, function(input, output, session) {
 
+    # Reactive values ------------------------------
+    last_analysis <- reactiveVal()
+
     # Modules --------------------------------------
     helpButton$server("help", helptext = constants$help_config$analysis)
     helpButton$server("help-report", helptext = constants$help_config$report)
@@ -94,7 +97,7 @@ server <- function(id, data = reactive(NULL), plots = reactive(NULL), calendar =
 
       data <- data()$data
 
-      req(nrow(data$EDA) >0)
+      req(nrow(data$EDA) > 0)
 
       tms <- range(data$EDA[[functions$get_datetime_column(data$EDA)]])
       updateDateInput(session, "date_analysis_start",
@@ -123,12 +126,9 @@ server <- function(id, data = reactive(NULL), plots = reactive(NULL), calendar =
       updateNumericInput(session, "time_second_end",
                          value = second(max(tms)), min = 0, max = 59)
 
-
     })
 
-
-    last_analysis <- reactiveVal()
-
+    ## Process data ------------------------------
     observe({
 
       toastr_warning("Analysis started - please be patient, this can take a minute or longer",
@@ -162,10 +162,11 @@ server <- function(id, data = reactive(NULL), plots = reactive(NULL), calendar =
              e4 = {
                analysis_out <- process_e4(data)
              },
+             # currently disabled, see visualization view
              `embrace-plus` = {
                analysis_out <- process_embrace_plus(data)
              },
-             #TODO: nowatch
+             # currently disabled, see visualization view
              nowatch = {
                analysis_out <- process_nowatch(data)
              }
@@ -177,8 +178,7 @@ server <- function(id, data = reactive(NULL), plots = reactive(NULL), calendar =
 
     }) |> bindEvent(input$btn_do_analysis)
 
-
-
+    ## Download report ------------------------------
     output$ui_download_report <- renderUI({
       req(last_analysis())
 

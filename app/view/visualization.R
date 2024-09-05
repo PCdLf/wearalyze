@@ -9,7 +9,7 @@ box::use(
             e_legend, e_line, e_mark_area, e_mark_line, e_visual_map,
             e_x_axis, e_y_axis, e_title, e_tooltip,
             echarts4rOutput, renderEcharts4r],
-  htmlwidgets[JS, onRender],
+  htmlwidgets[onRender],
   lubridate[ymd_hms],
   scales[rescale],
   shiny[actionButton, bindEvent, br, checkboxInput, column, div, fluidRow, hr,
@@ -40,6 +40,7 @@ ui <- function(id) {
   tagList(
     navset_tab(
       id = ns("tabs"),
+      # Settings -------------------------------------
       nav_panel(
         title = "Settings",
         icon = icon("cogs"),
@@ -98,6 +99,7 @@ ui <- function(id) {
 
       ),
 
+      # Daily graphs ---------------------------------
       nav_panel(
         title = "Daily",
         icon = icon("chart-bar"),
@@ -146,6 +148,7 @@ ui <- function(id) {
         uiOutput(ns("echarts_notes"))
       ),
 
+      # Problem target behaviour --------------------
       nav_panel(
         title = "Target Behaviour",
         icon = icon("chart-bar"),
@@ -153,6 +156,7 @@ ui <- function(id) {
         uiOutput(ns("problemtarget_plots"))
       ),
 
+      # Annotations ---------------------------------
       nav_panel(
         title = "Annotations",
         icon = icon("list-ol"),
@@ -171,18 +175,13 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
                    device, r, problemtarget = reactive(NULL)) {
   moduleServer(id, function(input, output, session) {
 
+    ns <- session$ns
+
     # Reactive values -------------------------------
     dailygraphs1 <- reactiveVal()
     dailygraphs2 <- reactiveVal()
     dailygraphs3 <- reactiveVal()
     dailygraphs4 <- reactiveVal()
-
-    # Constants -------------------------------------
-    yearMonthDate <- JS('function (value) {
-        var d = new Date(value);
-        var datestring = d.getFullYear() + "-" + ("0"+(d.getMonth()+1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2)
-        return datestring
-      }')
 
     # Modules ---------------------------------------
     helpButton$server("help", helptext = constants$help_config$visualization)
@@ -191,6 +190,22 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
     y_temp <- visSeriesOptions$server("temp")
 
     # Functionality ---------------------------------
+    ## Init -----------------------------------------
+    functions$hide_tab(ns("plottab"))
+    functions$hide_tab(ns("plottab2"))
+    functions$hide_tab(ns("plotannotations"))
+
+    ## Collect series options -----------------------
+    series_options <- reactive(
+      list(
+        EDA = y_eda(),
+        HR = y_hr(),
+        TEMP = y_temp(),
+        MOVE = r$y_move()
+      )
+    )
+
+    ## Date picker ----------------------------------
     observe({
       if (r$more_than_24h == TRUE) {
         show("date_picker")
@@ -211,15 +226,14 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
       r$chosen_dates <- input$date_picker
     })
 
+    ## Settings -------------------------------------
     output$ui_move <- renderUI({
-      ns <- session$ns
-      type <- r$type
       r$load_move <- runif(1)
 
       if (r$type == "aggregated" && device == "embrace-plus") {
         y_range <- c(0, 0.7)
       } else {
-        y_range <- as.numeric(constants$app_config$visualisation$move[[device]][[type]]$yrange)
+        y_range <- as.numeric(constants$app_config$visualisation$move[[device]][[r$type]]$yrange)
       }
 
       visSeriesOptions$ui(ns("move"),
@@ -229,10 +243,9 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
     observe({
       req(r$type)
       req(r$load_move)
-      type <- r$type
       r$y_move <- visSeriesOptions$server("move",
                                           selected = "custom",
-                                          custom_y = constants$app_config$visualisation$move[[device]][[type]]$custom_y)
+                                          custom_y = constants$app_config$visualisation$move[[device]][[r$type]]$custom_y)
     })
 
     observe({
@@ -242,6 +255,8 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
         hide("hr_options")
       }
 
+      # Different datasets have different names for movement data
+      # if no match was found, hide move options.
       if (!"ACC" %in% names(data()$data) &&
           !"MOVE" %in% names(data()$data) &&
           !"ACCELEROMETERS-STD" %in% names(data()$data) &&
@@ -251,30 +266,12 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
 
     })
 
-    functions$hide_tab(session$ns("plottab"))
-    functions$hide_tab(session$ns("plottab2"))
-    functions$hide_tab(session$ns("plotannotations"))
-
-    # Collect submodule output in a single reactive
-    series_options <- reactive(
-      list(
-        EDA = y_eda(),
-        HR = y_hr(),
-        TEMP = y_temp(),
-        MOVE = r$y_move()
-      )
-    )
-
-    # Option to plot aggregated data (or not),
-    # only visible if less than 2 hours of data, otherwise the plot will not be responsive.
-    data_range_hours <- reactive({
-      functions$data_datetime_range(data()$data)
-    })
-
     output$ui_plot_agg_data <- renderUI({
 
-      if(data_range_hours() > 24){
+      if(r$more_than_24h){
 
+        # Aggregating by 5 minutes in case of large data will speed
+        # up the rendering of the plot significantly
         if(r$more_than_2weeks) {
           label <- "Aggregate data by 5 minutes"
         } else {
@@ -283,7 +280,7 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
 
         tagList(
           tags$hr(),
-          radioButtons(session$ns("rad_plot_agg"),
+          radioButtons(ns("rad_plot_agg"),
                        label = label,
                        choices = c("Yes","No"),
                        inline = TRUE,
@@ -297,24 +294,8 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
     })
 
 
-    # # Option to plot tags onto plot.
-    # # Only visible if there was a tags.csv file in the uploaded ZIP file.
-    # have_tag_data <- reactive({
-    #   !is.null(data()$data$tags)
-    # })
-    #
-    # output$ui_plot_tags <- renderUI({
-    #   req(have_tag_data())
-    #
-    #   tagList(
-    #     tags$hr(),
-    #     radioButtons(session$ns("rad_plot_tags"), "Add tags to plot",
-    #                  choices = c("Yes","No"), inline = TRUE)
-    #   )
-    #
-    # })
-
-
+    # Plotting -------------------------------------
+    ## Daily graphs --------------------------------
     observe({
 
       data <- data()
@@ -323,27 +304,21 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
 
       toastr_info("Plot construction started...")
 
-      # Precalc. timeseries (for viz.)
-      if(is.null(input$rad_plot_agg)){
-        agg <- "Yes"
-      } else {
-        agg <- input$rad_plot_agg
-      }
-
-      if (agg == "Yes") {
+      # Use aggregated data if needed
+      if (is.null(input$rad_plot_agg) || input$rad_plot_agg == "Yes") {
         data <- data$data_agg
       } else {
         data <- data$data
       }
 
-      functions$show_tab(session$ns("plottab"))
+      functions$show_tab(ns("plottab"))
 
       if (isTruthy(calendar())) {
-        functions$show_tab(session$ns("plotannotations"))
+        functions$show_tab(ns("plotannotations"))
       }
 
       nav_select(id = "tabs",
-                 selected = session$ns("plottab"))
+                 selected = ns("plottab"))
 
       if(input$check_add_calendar_annotation){
         annotatedata <- calendar()
@@ -361,6 +336,16 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
           x$date <- as.Date(x$DateTime, tz = Sys.timezone())
           x <- x[x$date %in% as.Date(r$chosen_dates),]
           x$date <- NULL
+          x
+        })
+      }
+
+      # if less than 24 hours of data, or viewing one particular day, don't complete data
+      if(r$more_than_24h & r$chosen_dates == "All"){
+        data <- lapply(data, function(x) {
+          x <- x |>
+            complete(DateTime = seq.Date(as.Date(min(x$DateTime)), as.Date(max(x$DateTime)), by = "1 day")) |>
+            arrange(DateTime)
           x
         })
       }
@@ -407,17 +392,17 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
 
           toastr_info("Applying stress algorithm 🚀")
 
-          data <- predict_stress$return_predictions(data()$data, types = c("TEMP", "MOVE", "EDA", "HR"))
+          predicted_data <- predict_stress$return_predictions(data, types = c("TEMP", "MOVE", "EDA", "HR"))
 
           toastr_success("Got predictions!")
           toastr_info("Rendering graphs...")
 
           # combine into one dataframe, with DateTime as index
           # only join datasets if they are available (not NULL)
-          plot_data <- data.frame(DateTime = data$TEMP$DateTime)
+          plot_data <- data.frame(DateTime = predicted_data$TEMP$DateTime)
           for (type in c("TEMP", "MOVE", "EDA", "HR")) {
-            if (!is.null(data[[type]])) {
-              plot_data <- plot_data |> left_join(data[[type]], by = "DateTime")
+            if (!is.null(predicted_data[[type]])) {
+              plot_data <- plot_data |> left_join(predicted_data[[type]], by = "DateTime")
             } else {
               plot_data[[type]] <- NA
             }
@@ -453,10 +438,12 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
                    lineStyle = list(
                      width = 1
                    )) |>
+            e_title(input$txt_plot_main_title,
+                    left = "50%") |>
             e_x_axis(
               axisPointer = list(show = TRUE),
               axisLabel = list(
-                formatter = yearMonthDate
+                formatter = constants$yearMonthDate
               )
             ) |>
             e_y_axis(
@@ -488,7 +475,6 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
 
       })
 
-
       output$daily_graphs1 <- renderEcharts4r({
 
         req(data$EDA)
@@ -499,16 +485,7 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
           line_val <- series_options()$EDA$custom_y_val
         }
 
-        # if less than 24 hours of data, don't complete data
-        if(r$more_than_24h){
-          data <- data$EDA |>
-            complete(DateTime = seq.Date(as.Date(min(DateTime)), as.Date(max(DateTime)), by = "1 day")) |>
-            arrange(DateTime)
-        } else {
-          data <- data$EDA
-        }
-
-        chart <- data |>
+        chart <- data$EDA |>
           e_charts(DateTime) |>
           e_line(EDA,
                  name = "EDA",
@@ -517,12 +494,13 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
                  lineStyle = list(
                    width = 1
                  )) |>
-          e_title(input$txt_plot_main_title,
-                  left = "40%") |>
+          # If there is a stress algorith plot, don't show title here
+          e_title(ifelse(input$incl_stress_algorithm, "", input$txt_plot_main_title),
+                  left = "50%") |>
           e_x_axis(
             axisPointer = list(show = TRUE),
             axisLabel = list(
-              formatter = yearMonthDate
+              formatter = constants$yearMonthDate
             )
           ) |>
           e_y_axis(
@@ -562,16 +540,7 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
           line_val <- series_options()$HR$custom_y_val
         }
 
-        # if less than 24 hours of data, don't complete data
-        if(r$more_than_24h){
-          data <- data$HR |>
-            complete(DateTime = seq.Date(as.Date(min(DateTime)), as.Date(max(DateTime)), by = "1 day")) |>
-            arrange(DateTime)
-        } else {
-          data <- data$HR
-        }
-
-        chart <- data |>
+        chart <- data$HR |>
           e_charts(DateTime) |>
           e_line(HR,
                  name = "HR",
@@ -583,7 +552,7 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
           e_x_axis(
             axisPointer = list(show = TRUE),
             axisLabel = list(
-              formatter = yearMonthDate
+              formatter = constants$yearMonthDate
             )
           ) |>
           e_y_axis(
@@ -622,16 +591,7 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
           line_val <- series_options()$TEMP$custom_y_val
         }
 
-        # if less than 24 hours of data, don't complete data
-        if(r$more_than_24h){
-          data <- data$TEMP |>
-            complete(DateTime = seq.Date(as.Date(min(DateTime)), as.Date(max(DateTime)), by = "1 day")) |>
-            arrange(DateTime)
-        } else {
-          data <- data$TEMP
-        }
-
-        chart <- data |>
+        chart <- data$TEMP |>
           e_charts(DateTime) |>
           e_line(TEMP,
                  name = "Temperature",
@@ -643,7 +603,7 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
           e_x_axis(
             axisPointer = list(show = TRUE),
             axisLabel = list(
-              formatter = yearMonthDate
+              formatter = constants$yearMonthDate
             )
           ) |>
           e_y_axis(
@@ -682,16 +642,7 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
           line_val <- series_options()$MOVE$custom_y_val
         }
 
-        # if less than 24 hours of data, don't complete data
-        if(r$more_than_24h){
-          data <- data$MOVE |>
-            complete(DateTime = seq.Date(as.Date(min(DateTime)), as.Date(max(DateTime)), by = "1 day")) |>
-            arrange(DateTime)
-        } else {
-          data <- data$MOVE
-        }
-
-        chart <- data |>
+        chart <- data$MOVE |>
           e_charts(DateTime) |>
           e_line(MOVE,
                  name = "MOVE",
@@ -703,7 +654,7 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
           e_x_axis(
             axisPointer = list(show = TRUE),
             axisLabel = list(
-              formatter = yearMonthDate
+              formatter = constants$yearMonthDate
             )
           ) |>
           e_y_axis(
@@ -741,7 +692,7 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
                  });
                  Shiny.setInputValue('%s', xbounds);
                });
-            }", session$ns("datazoom_bounds"))
+            }", ns("datazoom_bounds"))
           )
 
         dailygraphs4(chart)
@@ -773,6 +724,7 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
 
     }) |> bindEvent(input$incl_stress_algorithm)
 
+    ## Problem target behaviour ---------------------
     output$problemtarget_plots <- renderUI({
 
       data <- data()
@@ -784,64 +736,64 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
         tagList(
           fluidRow(
             column(4,
-                   echarts4rOutput(session$ns("echarts_problemtarget_act_level")),
+                   echarts4rOutput(ns("echarts_problemtarget_act_level")),
             ),
             column(4,
-                   echarts4rOutput(session$ns("echarts_problemtarget_act_time"))
+                   echarts4rOutput(ns("echarts_problemtarget_act_time"))
             ),
             column(4,
-                   echarts4rOutput(session$ns("echarts_problemtarget_stress"))
+                   echarts4rOutput(ns("echarts_problemtarget_stress"))
             )
           ),
           fluidRow(
             column(6,
-                   echarts4rOutput(session$ns("echarts_problemtarget_sleep")),
+                   echarts4rOutput(ns("echarts_problemtarget_sleep")),
             ),
             column(6,
-                   echarts4rOutput(session$ns("echarts_problemtarget_behaviour"))
+                   echarts4rOutput(ns("echarts_problemtarget_behaviour"))
             )
           )
         )
       } else if ("STRESS" %in% names(data$data)) {
         fluidRow(
           column(3,
-                 echarts4rOutput(session$ns("echarts_problemtarget_act_level")),
+                 echarts4rOutput(ns("echarts_problemtarget_act_level")),
           ),
           column(3,
-                 echarts4rOutput(session$ns("echarts_problemtarget_act_time"))
+                 echarts4rOutput(ns("echarts_problemtarget_act_time"))
           ),
           column(3,
-                 echarts4rOutput(session$ns("echarts_problemtarget_stress"))
+                 echarts4rOutput(ns("echarts_problemtarget_stress"))
           ),
           column(3,
-                 echarts4rOutput(session$ns("echarts_problemtarget_behaviour"))
+                 echarts4rOutput(ns("echarts_problemtarget_behaviour"))
           )
         )
       } else if ("SLEEP" %in% names(data$data)) {
         fluidRow(
           column(3,
-                 echarts4rOutput(session$ns("echarts_problemtarget_act_level")),
+                 echarts4rOutput(ns("echarts_problemtarget_act_level")),
           ),
           column(3,
-                 echarts4rOutput(session$ns("echarts_problemtarget_act_time"))
+                 echarts4rOutput(ns("echarts_problemtarget_act_time"))
           ),
           column(3,
-                 echarts4rOutput(session$ns("echarts_problemtarget_sleep"))
+                 echarts4rOutput(ns("echarts_problemtarget_sleep"))
           ),
           column(3,
-                 echarts4rOutput(session$ns("echarts_problemtarget_behaviour"))
+                 echarts4rOutput(ns("echarts_problemtarget_behaviour"))
           )
         )
       } else {
         fluidRow(
           column(4,
-                 echarts4rOutput(session$ns("echarts_problemtarget_act_level")),
+                 echarts4rOutput(ns("echarts_problemtarget_act_level")),
           ),
           column(4,
-                 echarts4rOutput(session$ns("echarts_problemtarget_act_time"))
+                 echarts4rOutput(ns("echarts_problemtarget_act_time"))
           ),
           column(4,
-                 echarts4rOutput(session$ns("echarts_problemtarget_behaviour"))
+                 echarts4rOutput(ns("echarts_problemtarget_behaviour"))
           )
         )
       }
@@ -854,21 +806,16 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
       req(data)
       req(problemtarget())
 
-      # Precalc. timeseries (for viz.)
-      if(is.null(input$rad_plot_agg)){
-        agg <- "Yes"
-      } else {
-        agg <- input$rad_plot_agg
-      }
-
-      if (agg == "Yes") {
+      if (is.null(input$rad_plot_agg) || input$rad_plot_agg == "Yes") {
         data <- data$data_agg
       } else {
         data <- data$data
       }
 
-      functions$show_tab(session$ns("plottab2"))
+      functions$show_tab(ns("plottab2"))
 
+      # Different devices have different data that can be used
+      # for an indication of movement
       if ("ACTIVITY-COUNTS" %in% names(data)) {
         data$MOVE <- data$`ACTIVITY-COUNTS`
       } else if ("COUNT" %in% names(data)) {
@@ -879,7 +826,7 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
       }
 
       # Group move data by 1 hour
-      df <- data$MOVE |>
+      df_activity <- data$MOVE |>
         mutate(active = ifelse(!is.na(activity_counts) & activity_counts > 0, 1, 0)) |>
         group_by(DateTime = lubridate::floor_date(DateTime, "1 hour")) |>
         summarise(
@@ -897,7 +844,7 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
         arrange(desc(DateTime))
 
       # Calculate weekly average of activity time
-      week_data <- df |>
+      week_data <- df_activity |>
         group_by(date) |>
         mutate(activity_time = sum(activity_time, na.rm = TRUE)) |>
         ungroup() |>
@@ -918,6 +865,11 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
       }
 
       if ("SLEEP" %in% names(data)) {
+        # Different devices have different data for sleep
+        # Two options:
+        # 1. There's a start and end time, and sleep time has to be calculated
+        # 2. There are sleep detection stages available, and every minute in
+        #    a stage (>0) counts as an minute slept.
         if ("start_timestamp" %in% names(data$SLEEP)) {
           df_sleep <- data$SLEEP |>
             mutate(start_timestamp = as.POSIXct(start_timestamp, origin = "1970-01-01", tz = "UTC"),
@@ -967,7 +919,7 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
       }
 
       output$echarts_problemtarget_act_level <- renderEcharts4r({
-        df |>
+        df_activity |>
           e_charts(hour) |>
           e_heatmap(date, activity_level, label = list(show = TRUE)) |>
           e_y_axis(name = "Date") |>
@@ -978,7 +930,7 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
       })
 
       output$echarts_problemtarget_act_time <- renderEcharts4r({
-        df |>
+        df_activity |>
           group_by(date) |>
           summarise(activity_time = sum(activity_time, na.rm = TRUE)) |>
           arrange(desc(date)) |>
@@ -998,7 +950,7 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
           e_x_axis(
             axisPointer = list(show = TRUE),
             axisLabel = list(
-              formatter = yearMonthDate
+              formatter = constants$yearMonthDate
             )
           ) |>
           e_title("Activity Time") |>
@@ -1012,9 +964,9 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
 
       output$echarts_problemtarget_behaviour <- renderEcharts4r({
 
-        title <- setdiff(df$`Problem or Target Behavior` |> unique(), NA)
+        title <- setdiff(df_activity$`Problem or Target Behavior` |> unique(), NA)
 
-        df |>
+        df_activity |>
           group_by(date) |>
           summarise(score = mean(Score, na.rm = TRUE)) |>
           arrange(desc(date)) |>
@@ -1032,7 +984,7 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
           e_x_axis(
             axisPointer = list(show = TRUE),
             axisLabel = list(
-              formatter = yearMonthDate
+              formatter = constants$yearMonthDate
             )
           ) |>
           e_title(paste("Target:", title, "Score")) |>
@@ -1063,7 +1015,7 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
           e_x_axis(
             axisPointer = list(show = TRUE),
             axisLabel = list(
-              formatter = yearMonthDate
+              formatter = constants$yearMonthDate
             )
           ) |>
           e_title("Measured Stress") |>
@@ -1075,7 +1027,9 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
       })
 
       output$echarts_problemtarget_sleep <- renderEcharts4r({
+
         req(df_sleep)
+
         df_sleep |>
           group_by(date) |>
           summarise(SLEEP = sum(SLEEP, na.rm = TRUE)) |>
@@ -1096,7 +1050,7 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
           e_x_axis(
             axisPointer = list(show = TRUE),
             axisLabel = list(
-              formatter = yearMonthDate
+              formatter = constants$yearMonthDate
             )
           ) |>
           e_title("Sleep") |>
@@ -1112,12 +1066,11 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
 
     }) |> bindEvent(input$btn_make_plot)
 
-
+    ## Annotations ---------------------------------
     current_visible_annotations <- reactive({
 
       if (!is.null(input$datazoom_bounds)) {
-        print(input$datazoom_bounds)
-        # !!!! WATCH THE TIMEZONE!
+        # !! WATCH THE TIMEZONE !!
         # Problem: cannot read timezone info from rv$calendar$Start, should
         # be saved there (as tzone attribute) when reading calendar
         ran <- suppressWarnings({
@@ -1135,6 +1088,18 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
 
     })
 
+    output$dt_annotations_visible <- renderDT({
+
+      current_visible_annotations() |>
+        mutate(Date = format(Date, "%Y-%m-%d"),
+               Start = format(Start, "%H:%M:%S"),
+               End = format(End, "%H:%M:%S")
+        ) |>
+        datatable(width = 500)
+
+    })
+
+    ## Notes ---------------------------------------
     output$echarts_notes <- renderUI({
       if (r$more_than_2weeks == TRUE) {
         week_comment <- "Note: the data is aggregated by 5 minutes as it contains more than 2 weeks of data."
@@ -1162,17 +1127,9 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
       )
     })
 
-    output$dt_annotations_visible <- renderDT({
-
-      current_visible_annotations() |>
-        mutate(Date = format(Date, "%Y-%m-%d"),
-               Start = format(Start, "%H:%M:%S"),
-               End = format(End, "%H:%M:%S")
-        ) |>
-        datatable(width = 500)
-
-    })
-
+    # Return values -------------------------------
+    # These return values are used in the analysis section of the
+    # application. Only applicable for the "legacy" E4 device.
     return(list(
       dailygraphs1 = dailygraphs1,
       dailygraphs2 = dailygraphs2,
