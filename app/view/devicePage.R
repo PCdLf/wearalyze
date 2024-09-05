@@ -19,6 +19,10 @@ ui <- function(id, device){
 
   ns <- NS(id)
 
+  # The device can contain spaces and upper case letters,
+  # this is stored in device_name and can be used in text to
+  # display the device in a friendly way. The device variable
+  # is overwritten and used to identify the device in the back-end.
   device_name <- device
   device <- functions$get_device_id(device)
 
@@ -58,9 +62,13 @@ ui <- function(id, device){
 server <- function(id, device) {
   moduleServer(id, function(input, output, session) {
 
-    device <- tolower(gsub(" ", "-", device))
+    device <- functions$get_device_id(device)
 
     # reactive values -------------------------------
+    # top-level reactive values object, following
+    # the strategie du petit r
+    # this object is passed along to child modules and can
+    # be accessed and updated from inside those modules
     r <- reactiveValues(
       device = NULL,
       type = ifelse(constants$device_config[[device]]$aggregated, "aggregated", "raw"),

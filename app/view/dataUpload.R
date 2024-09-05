@@ -84,6 +84,7 @@ ui <- function(id, device) {
                          buttonLabel = "Browse..."),
 
                # if device is embrace-plus or nowatch, show button to choose dir
+               # for E4, it's only possible to upload zip files
                if (device %in% c("embrace-plus", "nowatch")) {
                  tagList(
                    tags$p("Or, select a folder containing the data files."),
@@ -124,6 +125,9 @@ server <- function(id, device, r) {
   moduleServer(id, function(input, output, session) {
 
     # Reactive values -------------------------------
+    # Note that this object is called rv, and not r, to
+    # make a distinction between the petit r object defined in
+    # devicePage.R
     rv <- reactiveValues(
       zip_files = NULL,
       data = NULL,
@@ -149,17 +153,22 @@ server <- function(id, device, r) {
       }
     })
 
+    # Modules --------------------------------------
+    helpButton$server("help", helptext = constants$help_config$dataupload[[device]])
+
     # Functionality ---------------------------------
     shinyDirChoose(input,
                    "select_folder",
                    roots = c(home = ifelse(.Platform$OS.type == "windows", "C:", "~"),
                              wd = "."))
 
-    # Modules --------------------------------------
-    helpButton$server("help", helptext = constants$help_config$dataupload[[device]])
+    observe({
+      session$reload()
+    }) |> bindEvent(input$btn_restart_app)
 
-    # Functionality ---------------------------------
-    # check if _small or _large files are available for device
+    ## Example files --------------------------------
+    # check if _small or _large files are available for device,
+    # and show or hide buttons accordingly
     observe({
       switch(device,
              e4 = {
@@ -191,34 +200,6 @@ server <- function(id, device, r) {
                }
              }
       )
-    })
-
-    observe({
-
-      req(input$select_folder)
-
-      toastr_info("Processing your data... Please wait!")
-      disable("select_folder")
-
-      if(length(input$select_folder) > 1){
-        # if windows, use \, otherwise use /
-        if (.Platform$OS.type == "windows") {
-          chc <- paste0(ifelse(input$select_folder$root == "home", ifelse(.Platform$OS.type == "windows", "C:", "~"), "."),
-                        paste0(input$select_folder$path, collapse = "\\")
-          )
-        } else {
-          chc <- paste0(ifelse(input$select_folder$root == "home", ifelse(.Platform$OS.type == "windows", "C:", "~"), "."),
-                        paste0(input$select_folder$path, collapse = "/")
-          )
-        }
-      } else {
-        chc <- NA
-      }
-
-      if(!is.na(chc)){
-        rv$folder <- chc
-      }
-
     })
 
     observe({
@@ -255,6 +236,118 @@ server <- function(id, device, r) {
 
     }) |> bindEvent(input$btn_use_example_data_small)
 
+    ## Select folder --------------------------------
+    # Two ways in which rv$folder gets set:
+    # 1. When a folder is selected using the shinyDirChoose function
+    # 2. When an example dataset is selected, and rv$folder is defined
+    #    on the server side.
+    observe({
+
+      req(input$select_folder)
+
+      toastr_info("Processing your data... Please wait!")
+      disable("select_folder")
+
+      if(length(input$select_folder) > 1){
+        # if windows, use \, otherwise use /
+        if (.Platform$OS.type == "windows") {
+          chc <- paste0(ifelse(input$select_folder$root == "home", ifelse(.Platform$OS.type == "windows", "C:", "~"), "."),
+                        paste0(input$select_folder$path, collapse = "\\")
+          )
+        } else {
+          chc <- paste0(ifelse(input$select_folder$root == "home", ifelse(.Platform$OS.type == "windows", "C:", "~"), "."),
+                        paste0(input$select_folder$path, collapse = "/")
+          )
+        }
+      } else {
+        chc <- NA
+      }
+
+      if(!is.na(chc)){
+        rv$folder <- chc
+      }
+
+    })
+
+    observe({
+
+      req(rv$folder)
+
+      switch(device,
+             `embrace-plus` = {
+               out <- read_embrace_plus(folder = rv$folder, type = ifelse(rv$aggregated, "aggregated", "raw"))
+             },
+             nowatch = {
+               out <- read_nowatch(folder = rv$folder)
+             })
+
+      if(is.null(out)){
+
+        toastr_error("Something went wrong with getting the data - check folder!")
+
+        functions$disable_link(menu = device, name = "Calendar")
+        functions$disable_link(menu = device, name = "Visualization")
+        functions$disable_link(menu = device, name = "Data cutter")
+
+      } else {
+        switch(device,
+               `embrace-plus` = {
+                 rv$data <- out
+                 if (rv$aggregated) {
+                   rv$data <- out
+                 } else {
+                   rv$data <- rbind_embrace_plus(rv$data)
+                 }
+               },
+               nowatch = {
+                 rv$data <- out
+               })
+
+        # Get min and max date, and determine whether or not there's more than 24 hours
+        if (device == "nowatch") {
+          min_date <- min(rv$data$HR$DateTime)
+          max_date <- max(rv$data$HR$DateTime)
+        } else {
+          min_date <- min(rv$data$EDA$DateTime)
+          max_date <- max(rv$data$EDA$DateTime)
+        }
+        r$more_than_24h <- difftime(max_date, min_date, units = "hours") > 24
+        r$more_than_2weeks <- difftime(max_date, min_date, units = "weeks") > 2
+
+        switch(device,
+               `embrace-plus` = {
+                 if (rv$aggregated) {
+                   rv$data_agg <- aggregate_embrace_plus_data(rv$data, interval = ifelse(r$more_than_2weeks, "5 min", "1 min"))
+                 } else {
+                   rv$data_agg <- aggregate_embrace_plus_data(rv$data, interval = ifelse(r$more_than_2weeks, "5 min", "1 min"))
+                 }
+               },
+               nowatch = {
+                 rv$data_agg <- aggregate_nowatch_data(rv$data, interval = ifelse(r$more_than_2weeks, "5 min", "1 min"))
+               })
+
+        rv$newdata <- runif(1)
+
+        # Message: data read!
+        toastr_success("Data read successfully.")
+
+        functions$enable_link(menu = device, name = "Calendar")
+        functions$enable_link(menu = device, name = "Visualization")
+
+        if (device == "e4") {
+          functions$enable_link(menu = device, name = "Data cutter")
+        }
+
+        hide("div_upload_file")
+        show("div_restart_application")
+        enable("btn_use_example_data_small")
+        enable("btn_use_example_data_large")
+        enable("select_folder")
+      }
+    }) |> bindEvent(rv$folder)
+
+
+    ## Select zip file(s) ---------------------------
     observe({
       rv$zip_files <- input$select_zip_files
     })
@@ -367,83 +460,7 @@ server <- function(id, device, r) {
 
     }) |> bindEvent(rv$zip_files)
 
-    observe({
-
-      req(rv$folder)
-
-      switch(device,
-             `embrace-plus` = {
-               out <- read_embrace_plus(folder = rv$folder, type = ifelse(rv$aggregated, "aggregated", "raw"))
-             },
-             nowatch = {
-               out <- read_nowatch(folder = rv$folder)
-             })
-
-      if(is.null(out)){
-
-        toastr_error("Something went wrong with getting the data - check folder!")
-
-        functions$disable_link(menu = device, name = "Calendar")
-        functions$disable_link(menu = device, name = "Visualization")
-        functions$disable_link(menu = device, name = "Data cutter")
-
-      } else {
-        switch(device,
-               `embrace-plus` = {
-                 rv$data <- out
-                 if (rv$aggregated) {
-                   rv$data <- out
-                 } else {
-                   rv$data <- rbind_embrace_plus(rv$data)
-                 }
-               },
-               nowatch = {
-                 rv$data <- out
-               })
-
-        # Get min and max date, and determine whether or not there's more than 24 hours
-        if (device == "nowatch") {
-          min_date <- min(rv$data$HR$DateTime)
-          max_date <- max(rv$data$HR$DateTime)
-        } else {
-          min_date <- min(rv$data$EDA$DateTime)
-          max_date <- max(rv$data$EDA$DateTime)
-        }
-        r$more_than_24h <- difftime(max_date, min_date, units = "hours") > 24
-        r$more_than_2weeks <- difftime(max_date, min_date, units = "weeks") > 2
-
-        switch(device,
-               `embrace-plus` = {
-                 if (rv$aggregated) {
-                   rv$data_agg <- aggregate_embrace_plus_data(rv$data, interval = ifelse(r$more_than_2weeks, "5 min", "1 min"))
-                 } else {
-                   rv$data_agg <- aggregate_embrace_plus_data(rv$data, interval = ifelse(r$more_than_2weeks, "5 min", "1 min"))
-                 }
-               },
-               nowatch = {
-                 rv$data_agg <- aggregate_nowatch_data(rv$data, interval = ifelse(r$more_than_2weeks, "5 min", "1 min"))
-               })
-
-        rv$newdata <- runif(1)
-
-        # Message: data read!
-        toastr_success("Data read successfully.")
-
-        functions$enable_link(menu = device, name = "Calendar")
-        functions$enable_link(menu = device, name = "Visualization")
-
-        if (device == "e4") {
-          functions$enable_link(menu = device, name = "Data cutter")
-        }
-
-        hide("div_upload_file")
-        show("div_restart_application")
-        enable("btn_use_example_data_small")
-        enable("btn_use_example_data_large")
-        enable("select_folder")
-      }
-    }) |> bindEvent(rv$folder)
-
+    ## Messages ------------------------------------
     output$msg_data_read <- renderUI({
 
       req(rv$data)
@@ -466,13 +483,8 @@ server <- function(id, device, r) {
 
     })
 
-    observe({
-      session$reload()
-    }) |> bindEvent(input$btn_restart_app)
-
-
+    # Return values ---------------------------------
     out <- reactive({
-
       list(
         data = rv$data,
         data_agg = rv$data_agg,
@@ -480,7 +492,6 @@ server <- function(id, device, r) {
         newdata = rv$newdata,
         fn_names = rv$fn_names
       )
-
     })
 
     return(out)
