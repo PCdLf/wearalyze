@@ -262,7 +262,7 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
 
     output$ui_plot_agg_data <- renderUI({
 
-      if(r$more_than_24_hours){
+      if(r$more_than_24h){
 
         if(r$more_than_2weeks) {
           label <- "Aggregate data by 5 minutes"
@@ -287,6 +287,7 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
 
 
     # Plotting -------------------------------------
+    ## Daily graphs --------------------------------
     observe({
 
       data <- data()
@@ -296,26 +297,20 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
       toastr_info("Plot construction started...")
 
       # Precalc. timeseries (for viz.)
-      if(is.null(input$rad_plot_agg)){
-        agg <- "Yes"
-      } else {
-        agg <- input$rad_plot_agg
-      }
-
-      if (agg == "Yes") {
+      if (is.null(input$rad_plot_agg) || input$rad_plot_agg == "Yes") {
         data <- data$data_agg
       } else {
         data <- data$data
       }
 
-      functions$show_tab(session$ns("plottab"))
+      functions$show_tab(ns("plottab"))
 
       if (isTruthy(calendar())) {
-        functions$show_tab(session$ns("plotannotations"))
+        functions$show_tab(ns("plotannotations"))
       }
 
       nav_select(id = "tabs",
-                 selected = session$ns("plottab"))
+                 selected = ns("plottab"))
 
       if(input$check_add_calendar_annotation){
         annotatedata <- calendar()
@@ -379,17 +374,17 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
 
           toastr_info("Applying stress algorithm 🚀")
 
-          data <- predict_stress$return_predictions(data()$data, types = c("TEMP", "MOVE", "EDA", "HR"))
+          predicted_data <- predict_stress$return_predictions(data, types = c("TEMP", "MOVE", "EDA", "HR"))
 
           toastr_success("Got predictions!")
           toastr_info("Rendering graphs...")
 
           # combine into one dataframe, with DateTime as index
           # only join datasets if they are available (not NULL)
-          plot_data <- data.frame(DateTime = data$TEMP$DateTime)
+          plot_data <- data.frame(DateTime = predicted_data$TEMP$DateTime)
           for (type in c("TEMP", "MOVE", "EDA", "HR")) {
-            if (!is.null(data[[type]])) {
-              plot_data <- plot_data |> left_join(data[[type]], by = "DateTime")
+            if (!is.null(predicted_data[[type]])) {
+              plot_data <- plot_data |> left_join(predicted_data[[type]], by = "DateTime")
             } else {
               plot_data[[type]] <- NA
             }
@@ -713,7 +708,7 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
                  });
                  Shiny.setInputValue('%s', xbounds);
                });
-            }", session$ns("datazoom_bounds"))
+            }", ns("datazoom_bounds"))
           )
 
         dailygraphs4(chart)
@@ -745,6 +740,7 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
 
     }) |> bindEvent(input$incl_stress_algorithm)
 
+    ## Problem target behaviour ---------------------
     output$problemtarget_plots <- renderUI({
 
       data <- data()
@@ -756,64 +752,64 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
         tagList(
           fluidRow(
             column(4,
-                   echarts4rOutput(session$ns("echarts_problemtarget_act_level")),
+                   echarts4rOutput(ns("echarts_problemtarget_act_level")),
             ),
             column(4,
-                   echarts4rOutput(session$ns("echarts_problemtarget_act_time"))
+                   echarts4rOutput(ns("echarts_problemtarget_act_time"))
             ),
             column(4,
-                   echarts4rOutput(session$ns("echarts_problemtarget_stress"))
+                   echarts4rOutput(ns("echarts_problemtarget_stress"))
             )
           ),
           fluidRow(
             column(6,
-                   echarts4rOutput(session$ns("echarts_problemtarget_sleep")),
+                   echarts4rOutput(ns("echarts_problemtarget_sleep")),
             ),
             column(6,
-                   echarts4rOutput(session$ns("echarts_problemtarget_behaviour"))
+                   echarts4rOutput(ns("echarts_problemtarget_behaviour"))
             )
           )
         )
       } else if ("STRESS" %in% names(data$data)) {
         fluidRow(
           column(3,
-                 echarts4rOutput(session$ns("echarts_problemtarget_act_level")),
+                 echarts4rOutput(ns("echarts_problemtarget_act_level")),
           ),
           column(3,
-                 echarts4rOutput(session$ns("echarts_problemtarget_act_time"))
+                 echarts4rOutput(ns("echarts_problemtarget_act_time"))
           ),
           column(3,
-                 echarts4rOutput(session$ns("echarts_problemtarget_stress"))
+                 echarts4rOutput(ns("echarts_problemtarget_stress"))
           ),
           column(3,
-                 echarts4rOutput(session$ns("echarts_problemtarget_behaviour"))
+                 echarts4rOutput(ns("echarts_problemtarget_behaviour"))
           )
         )
       } else if ("SLEEP" %in% names(data$data)) {
         fluidRow(
           column(3,
-                 echarts4rOutput(session$ns("echarts_problemtarget_act_level")),
+                 echarts4rOutput(ns("echarts_problemtarget_act_level")),
           ),
           column(3,
-                 echarts4rOutput(session$ns("echarts_problemtarget_act_time"))
+                 echarts4rOutput(ns("echarts_problemtarget_act_time"))
           ),
           column(3,
-                 echarts4rOutput(session$ns("echarts_problemtarget_sleep"))
+                 echarts4rOutput(ns("echarts_problemtarget_sleep"))
           ),
           column(3,
-                 echarts4rOutput(session$ns("echarts_problemtarget_behaviour"))
+                 echarts4rOutput(ns("echarts_problemtarget_behaviour"))
           )
         )
       } else {
         fluidRow(
           column(4,
-                 echarts4rOutput(session$ns("echarts_problemtarget_act_level")),
+                 echarts4rOutput(ns("echarts_problemtarget_act_level")),
           ),
           column(4,
-                 echarts4rOutput(session$ns("echarts_problemtarget_act_time"))
+                 echarts4rOutput(ns("echarts_problemtarget_act_time"))
           ),
           column(4,
-                 echarts4rOutput(session$ns("echarts_problemtarget_behaviour"))
+                 echarts4rOutput(ns("echarts_problemtarget_behaviour"))
           )
         )
       }
@@ -827,19 +823,13 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
       req(problemtarget())
 
       # Precalc. timeseries (for viz.)
-      if(is.null(input$rad_plot_agg)){
-        agg <- "Yes"
-      } else {
-        agg <- input$rad_plot_agg
-      }
-
-      if (agg == "Yes") {
+      if (is.null(input$rad_plot_agg) || input$rad_plot_agg == "Yes") {
         data <- data$data_agg
       } else {
         data <- data$data
       }
 
-      functions$show_tab(session$ns("plottab2"))
+      functions$show_tab(ns("plottab2"))
 
       if ("ACTIVITY-COUNTS" %in% names(data)) {
         data$MOVE <- data$`ACTIVITY-COUNTS`
@@ -1084,7 +1074,7 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
 
     }) |> bindEvent(input$btn_make_plot)
 
-
+    ## Annotations ---------------------------------
     current_visible_annotations <- reactive({
 
       if (!is.null(input$datazoom_bounds)) {
@@ -1107,6 +1097,18 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
 
     })
 
+    output$dt_annotations_visible <- renderDT({
+
+      current_visible_annotations() |>
+        mutate(Date = format(Date, "%Y-%m-%d"),
+               Start = format(Start, "%H:%M:%S"),
+               End = format(End, "%H:%M:%S")
+        ) |>
+        datatable(width = 500)
+
+    })
+
+    ## Notes ---------------------------------------
     output$echarts_notes <- renderUI({
       if (r$more_than_2weeks == TRUE) {
         week_comment <- "Note: the data is aggregated by 5 minutes as it contains more than 2 weeks of data."
@@ -1134,17 +1136,7 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
       )
     })
 
-    output$dt_annotations_visible <- renderDT({
-
-      current_visible_annotations() |>
-        mutate(Date = format(Date, "%Y-%m-%d"),
-               Start = format(Start, "%H:%M:%S"),
-               End = format(End, "%H:%M:%S")
-        ) |>
-        datatable(width = 500)
-
-    })
-
+    # Return values -------------------------------
     return(list(
       dailygraphs1 = dailygraphs1,
       dailygraphs2 = dailygraphs2,
