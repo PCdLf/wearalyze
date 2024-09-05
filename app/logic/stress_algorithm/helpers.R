@@ -8,6 +8,10 @@ box::use(
   zoo[rollapply]
 )
 
+box::use(
+  app/logic/constants
+)
+
 load_models <- function() {
   # Load the saved models and preprocessed data
   load("./app/static/stress_algorithm/models/temperature_model.RData")  # Temperature model
@@ -75,7 +79,7 @@ preprocess_data <- function(new_data, value_col, scaler, range_min = NULL, range
 # Function to make predictions on new data using a specified model
 predict_new_data <- function(new_data, value_col, range_min = NULL, range_max = NULL) {
 
-  models <- load_models()
+  models <- constants$models
 
   # Determine the appropriate model and scaler
   if (value_col == "TEMP") {

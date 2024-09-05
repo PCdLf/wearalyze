@@ -42,6 +42,7 @@ return_predictions <- function(data, types) {
   })
 
   names(predictions) <- types
+
   return(predictions)
 
 }

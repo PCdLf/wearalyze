@@ -5,6 +5,10 @@ box::use(
   yaml[read_yaml]
 )
 
+box::use(
+  app/logic/stress_algorithm/helpers
+)
+
 #' Global theme for the app
 #' Find other Bootswatch themes here: https://bootswatch.com
 wearalyze_theme <- bs_theme(
@@ -26,3 +30,7 @@ yearMonthDate <- JS('function (value) {
         var datestring = d.getFullYear() + "-" + ("0"+(d.getMonth()+1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2)
         return datestring
       }')
+
+#' Stress algorith models
+#' These are the models that are used to predict stress
+models <- helpers$load_models()
