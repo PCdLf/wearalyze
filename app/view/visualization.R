@@ -9,7 +9,7 @@ box::use(
             e_legend, e_line, e_mark_area, e_mark_line, e_visual_map,
             e_x_axis, e_y_axis, e_title, e_tooltip,
             echarts4rOutput, renderEcharts4r],
-  htmlwidgets[JS, onRender],
+  htmlwidgets[onRender],
   lubridate[ymd_hms],
   scales[rescale],
   shiny[actionButton, bindEvent, br, checkboxInput, column, div, fluidRow, hr,
@@ -171,18 +171,13 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
                    device, r, problemtarget = reactive(NULL)) {
   moduleServer(id, function(input, output, session) {
 
+    ns <- session$ns
+
     # Reactive values -------------------------------
     dailygraphs1 <- reactiveVal()
     dailygraphs2 <- reactiveVal()
     dailygraphs3 <- reactiveVal()
     dailygraphs4 <- reactiveVal()
-
-    # Constants -------------------------------------
-    yearMonthDate <- JS('function (value) {
-        var d = new Date(value);
-        var datestring = d.getFullYear() + "-" + ("0"+(d.getMonth()+1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2)
-        return datestring
-      }')
 
     # Modules ---------------------------------------
     helpButton$server("help", helptext = constants$help_config$visualization)
@@ -191,6 +186,22 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
     y_temp <- visSeriesOptions$server("temp")
 
     # Functionality ---------------------------------
+    ## Init -----------------------------------------
+    functions$hide_tab(ns("plottab"))
+    functions$hide_tab(ns("plottab2"))
+    functions$hide_tab(ns("plotannotations"))
+
+    ## Collect series options -----------------------
+    series_options <- reactive(
+      list(
+        EDA = y_eda(),
+        HR = y_hr(),
+        TEMP = y_temp(),
+        MOVE = r$y_move()
+      )
+    )
+
+    ## Date picker ----------------------------------
     observe({
       if (r$more_than_24h == TRUE) {
         show("date_picker")
@@ -211,15 +222,14 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
       r$chosen_dates <- input$date_picker
     })
 
+    ## Settings -------------------------------------
     output$ui_move <- renderUI({
-      ns <- session$ns
-      type <- r$type
       r$load_move <- runif(1)
 
       if (r$type == "aggregated" && device == "embrace-plus") {
         y_range <- c(0, 0.7)
       } else {
-        y_range <- as.numeric(constants$app_config$visualisation$move[[device]][[type]]$yrange)
+        y_range <- as.numeric(constants$app_config$visualisation$move[[device]][[r$type]]$yrange)
       }
 
       visSeriesOptions$ui(ns("move"),
@@ -229,10 +239,9 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
     observe({
       req(r$type)
       req(r$load_move)
-      type <- r$type
       r$y_move <- visSeriesOptions$server("move",
                                           selected = "custom",
-                                          custom_y = constants$app_config$visualisation$move[[device]][[type]]$custom_y)
+                                          custom_y = constants$app_config$visualisation$move[[device]][[r$type]]$custom_y)
     })
 
     observe({
@@ -251,29 +260,9 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
 
     })
 
-    functions$hide_tab(session$ns("plottab"))
-    functions$hide_tab(session$ns("plottab2"))
-    functions$hide_tab(session$ns("plotannotations"))
-
-    # Collect submodule output in a single reactive
-    series_options <- reactive(
-      list(
-        EDA = y_eda(),
-        HR = y_hr(),
-        TEMP = y_temp(),
-        MOVE = r$y_move()
-      )
-    )
-
-    # Option to plot aggregated data (or not),
-    # only visible if less than 2 hours of data, otherwise the plot will not be responsive.
-    data_range_hours <- reactive({
-      functions$data_datetime_range(data()$data)
-    })
-
     output$ui_plot_agg_data <- renderUI({
 
-      if(data_range_hours() > 24){
+      if(r$more_than_24_hours){
 
         if(r$more_than_2weeks) {
           label <- "Aggregate data by 5 minutes"
@@ -283,7 +272,7 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
 
         tagList(
           tags$hr(),
-          radioButtons(session$ns("rad_plot_agg"),
+          radioButtons(ns("rad_plot_agg"),
                        label = label,
                        choices = c("Yes","No"),
                        inline = TRUE,
@@ -297,24 +286,7 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
     })
 
 
-    # # Option to plot tags onto plot.
-    # # Only visible if there was a tags.csv file in the uploaded ZIP file.
-    # have_tag_data <- reactive({
-    #   !is.null(data()$data$tags)
-    # })
-    #
-    # output$ui_plot_tags <- renderUI({
-    #   req(have_tag_data())
-    #
-    #   tagList(
-    #     tags$hr(),
-    #     radioButtons(session$ns("rad_plot_tags"), "Add tags to plot",
-    #                  choices = c("Yes","No"), inline = TRUE)
-    #   )
-    #
-    # })
-
-
+    # Plotting -------------------------------------
     observe({
 
       data <- data()
@@ -456,7 +428,7 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
             e_x_axis(
               axisPointer = list(show = TRUE),
               axisLabel = list(
-                formatter = yearMonthDate
+                formatter = constants$yearMonthDate
               )
             ) |>
             e_y_axis(
@@ -522,7 +494,7 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
           e_x_axis(
             axisPointer = list(show = TRUE),
             axisLabel = list(
-              formatter = yearMonthDate
+              formatter = constants$yearMonthDate
             )
           ) |>
           e_y_axis(
@@ -583,7 +555,7 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
           e_x_axis(
             axisPointer = list(show = TRUE),
             axisLabel = list(
-              formatter = yearMonthDate
+              formatter = constants$yearMonthDate
             )
           ) |>
           e_y_axis(
@@ -643,7 +615,7 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
           e_x_axis(
             axisPointer = list(show = TRUE),
             axisLabel = list(
-              formatter = yearMonthDate
+              formatter = constants$yearMonthDate
             )
           ) |>
           e_y_axis(
@@ -703,7 +675,7 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
           e_x_axis(
             axisPointer = list(show = TRUE),
             axisLabel = list(
-              formatter = yearMonthDate
+              formatter = constants$yearMonthDate
             )
           ) |>
           e_y_axis(
@@ -998,7 +970,7 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
           e_x_axis(
             axisPointer = list(show = TRUE),
             axisLabel = list(
-              formatter = yearMonthDate
+              formatter = constants$yearMonthDate
             )
           ) |>
           e_title("Activity Time") |>
@@ -1032,7 +1004,7 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
           e_x_axis(
             axisPointer = list(show = TRUE),
             axisLabel = list(
-              formatter = yearMonthDate
+              formatter = constants$yearMonthDate
             )
           ) |>
           e_title(paste("Target:", title, "Score")) |>
@@ -1063,7 +1035,7 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
           e_x_axis(
             axisPointer = list(show = TRUE),
             axisLabel = list(
-              formatter = yearMonthDate
+              formatter = constants$yearMonthDate
             )
           ) |>
           e_title("Measured Stress") |>
@@ -1096,7 +1068,7 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
           e_x_axis(
             axisPointer = list(show = TRUE),
             axisLabel = list(
-              formatter = yearMonthDate
+              formatter = constants$yearMonthDate
             )
           ) |>
           e_title("Sleep") |>
