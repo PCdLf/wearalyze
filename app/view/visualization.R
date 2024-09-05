@@ -332,6 +332,16 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
         })
       }
 
+      # if less than 24 hours of data, or viewing one particular day, don't complete data
+      if(r$more_than_24h & r$chosen_dates == "All"){
+        data <- lapply(data, function(x) {
+          x <- x |>
+            complete(DateTime = seq.Date(as.Date(min(x$DateTime)), as.Date(max(x$DateTime)), by = "1 day")) |>
+            arrange(DateTime)
+          x
+        })
+      }
+
       if(!"EDA" %in% names(data)){
         if ("SKIN_CONDUCTANCE" %in% names(data)){
           data$EDA <- data$SKIN_CONDUCTANCE
@@ -455,7 +465,6 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
 
       })
 
-
       output$daily_graphs1 <- renderEcharts4r({
 
         req(data$EDA)
@@ -466,16 +475,7 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
           line_val <- series_options()$EDA$custom_y_val
         }
 
-        # if less than 24 hours of data, don't complete data
-        if(r$more_than_24h){
-          data <- data$EDA |>
-            complete(DateTime = seq.Date(as.Date(min(DateTime)), as.Date(max(DateTime)), by = "1 day")) |>
-            arrange(DateTime)
-        } else {
-          data <- data$EDA
-        }
-
-        chart <- data |>
+        chart <- data$EDA |>
           e_charts(DateTime) |>
           e_line(EDA,
                  name = "EDA",
@@ -529,16 +529,7 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
           line_val <- series_options()$HR$custom_y_val
         }
 
-        # if less than 24 hours of data, don't complete data
-        if(r$more_than_24h){
-          data <- data$HR |>
-            complete(DateTime = seq.Date(as.Date(min(DateTime)), as.Date(max(DateTime)), by = "1 day")) |>
-            arrange(DateTime)
-        } else {
-          data <- data$HR
-        }
-
-        chart <- data |>
+        chart <- data$HR |>
           e_charts(DateTime) |>
           e_line(HR,
                  name = "HR",
@@ -589,16 +580,7 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
           line_val <- series_options()$TEMP$custom_y_val
         }
 
-        # if less than 24 hours of data, don't complete data
-        if(r$more_than_24h){
-          data <- data$TEMP |>
-            complete(DateTime = seq.Date(as.Date(min(DateTime)), as.Date(max(DateTime)), by = "1 day")) |>
-            arrange(DateTime)
-        } else {
-          data <- data$TEMP
-        }
-
-        chart <- data |>
+        chart <- data$TEMP |>
           e_charts(DateTime) |>
           e_line(TEMP,
                  name = "Temperature",
@@ -649,16 +631,7 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
           line_val <- series_options()$MOVE$custom_y_val
         }
 
-        # if less than 24 hours of data, don't complete data
-        if(r$more_than_24h){
-          data <- data$MOVE |>
-            complete(DateTime = seq.Date(as.Date(min(DateTime)), as.Date(max(DateTime)), by = "1 day")) |>
-            arrange(DateTime)
-        } else {
-          data <- data$MOVE
-        }
-
-        chart <- data |>
+        chart <- data$MOVE |>
           e_charts(DateTime) |>
           e_line(MOVE,
                  name = "MOVE",
