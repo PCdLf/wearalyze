@@ -9,7 +9,7 @@ box::use(
   shinyjs[disable, enable, hidden, hide, show],
   shinytoastr[toastr_info, toastr_success, toastr_error],
   stats[runif],
-  stringr[str_to_title],
+  stringr[str_detect, str_to_title],
   wearables[aggregate_e4_data, aggregate_embrace_plus_data, aggregate_nowatch_data,
             rbind_e4, rbind_embrace_plus, rbind_nowatch,
             read_e4, read_embrace_plus, read_nowatch]
@@ -244,11 +244,12 @@ server <- function(id, device, r) {
     observe({
 
       req(input$select_folder)
+      # when opening the dialog, the input will be 1 immediately
+      # therefore, additional check to make sure we don't proceed
       if(length(input$select_folder) == 1) {
         req(input$select_folder != 1)
       }
 
-      toastr_info("Processing your data... Please wait!")
       disable("select_folder")
 
       if(length(input$select_folder) > 1){
@@ -267,6 +268,19 @@ server <- function(id, device, r) {
       }
 
       if(!is.na(chc)){
+        # if embrace plus, we expect .csv or .avro files
+        # if nowatch, we expect .csv files or .json files
+        # if zip files are found, display error message
+        if(any(str_detect(dir(chc), ".zip"))){
+          toastr_error("Please select a folder containing the raw data files, not zip file(s).
+                       If you want to use zip file(s) please use the 'Choose ZIP file(s)' button instead.
+                       You can close this message now.",
+                       closeButton = TRUE, timeOut = 0)
+          enable("select_folder")
+          chc <- NA
+        } else {
+          toastr_info("Processing your data... Please wait!")
+        }
         rv$folder <- chc
       }
 
