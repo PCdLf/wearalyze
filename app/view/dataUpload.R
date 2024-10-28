@@ -244,6 +244,9 @@ server <- function(id, device, r) {
     observe({
 
       req(input$select_folder)
+      if(length(input$select_folder) == 1) {
+        req(input$select_folder != 1)
+      }
 
       toastr_info("Processing your data... Please wait!")
       disable("select_folder")
