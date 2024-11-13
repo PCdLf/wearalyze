@@ -343,6 +343,10 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
       # if less than 24 hours of data, or viewing one particular day, don't complete data
       if(r$more_than_24h & r$chosen_dates == "All"){
         data <- lapply(data, function(x) {
+          # skip when no DateTime column found
+          if (!"DateTime" %in% names(x)) {
+            return(x)
+          }
           x <- x |>
             complete(DateTime = seq.Date(as.Date(min(x$DateTime)), as.Date(max(x$DateTime)), by = "1 day")) |>
             arrange(DateTime)
