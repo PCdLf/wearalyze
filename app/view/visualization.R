@@ -879,7 +879,7 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
             mutate(start_timestamp = as.POSIXct(start_timestamp, origin = "1970-01-01", tz = "UTC"),
                    end_timestamp = as.POSIXct(end_timestamp, origin = "1970-01-01", tz = "UTC"),
                    DateTime = as.Date(start_timestamp),
-                   SLEEP = end_timestamp - start_timestamp) |>
+                   SLEEP = as.numeric(end_timestamp - start_timestamp, units = "hours")) |>
             group_by(DateTime) |>
             summarise(
               SLEEP = as.numeric(sum(SLEEP, na.rm = TRUE)),
