@@ -72,6 +72,8 @@ ui <- function(id, device) {
 
                # if device is embrace-plus, add checkbox with aggregated data
                if (device == "embrace-plus") {
+                 # if not aggregated, there's a need for a Spark cluster
+                 # 3/12/2024: temporarily disabled this button to avoid Spark issues, see server side
                  checkboxInput(ns("use_aggregated"),
                                label = "Use aggregated data",
                                value = constants$device_config[[device]]$aggregated)
@@ -141,6 +143,9 @@ server <- function(id, device, r) {
     # if checkbox is used, update rv$aggregated
     observe({
       if (device == "embrace-plus") {
+        # TEMP: always disable, which leaves the default (TRUE, aggregated data)
+        disable("use_aggregated")
+
         rv$aggregated <- input$use_aggregated
 
         if (input$use_aggregated) {
