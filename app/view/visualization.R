@@ -863,8 +863,11 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
         ungroup() |>
         mutate(week = format(DateTime, "%W")) |>
         group_by(week) |>
-        summarise(weekly_activity_time = mean(activity_time),
-                  date = max(date))
+        summarise(
+          # Convert to hours instead of minutes
+          weekly_activity_time = mean(activity_time) / 60,
+          date = max(date)
+        )
 
       if ("STRESS" %in% names(data)) {
         df_stress <- data$STRESS |>
@@ -945,7 +948,8 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
       output$echarts_problemtarget_act_time <- renderEcharts4r({
         df_activity |>
           group_by(date) |>
-          summarise(activity_time = sum(activity_time, na.rm = TRUE)) |>
+          # Convert to hours instead of minutes
+          summarise(activity_time = sum(activity_time, na.rm = TRUE) / 60) |>
           arrange(desc(date)) |>
           mutate(date = as.character(date)) |>
           e_charts(date) |>
@@ -954,7 +958,7 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
           e_data(week_data) |>
           e_line(weekly_activity_time,
                  name = "Weekly avg") |>
-          e_y_axis(name = "Minutes",
+          e_y_axis(name = "Hours",
                    nameGap = 0,
                    nameLocation = "end",
                    nameTextStyle = list(
@@ -968,7 +972,7 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
           ) |>
           e_title("Activity Time") |>
           e_flip_coords() |>
-          e_grid(left = 70)  |>
+          e_grid(left = 70) |>
           e_legend(
             left = "left",
             top = 30
