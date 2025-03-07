@@ -91,9 +91,12 @@ ui <- function(id) {
 
                  tags$div(id = ns("stress_options"),
                           tags$h4("STRESS ALGORITHM"),
-                          checkboxInput(ns("incl_stress_algorithm"),
-                                        "Include stress algorithm",
-                                        value = TRUE))
+                          checkboxInput(
+                            ns("incl_stress_algorithm"),
+                            "Include stress algorithm",
+                            value = FALSE
+                          )
+                 )
           )
         )
 
