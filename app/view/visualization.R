@@ -442,8 +442,11 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
                    lineStyle = list(
                      width = 1
                    )) |>
-            e_title(input$txt_plot_main_title,
-                    left = "50%") |>
+            e_title(
+              input$txt_plot_main_title,
+              left = "50%",
+              top = 0
+            ) |>
             e_x_axis(
               axisPointer = list(show = TRUE),
               axisLabel = list(
@@ -460,7 +463,10 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
             ) |>
             e_datazoom(show = FALSE) |>
             e_tooltip(trigger = "axis") |>
-            e_legend(show = TRUE) |>
+            e_legend(
+              show = TRUE,
+              top = 30
+            ) |>
             e_group("daily") |>
             e_grid(
               top = 60,
