@@ -399,7 +399,7 @@ server <- function(id, device, r) {
                    out <- read_e4(fns[i])
                  },
                  `embrace-plus` = {
-                   out <- read_embrace_plus(zipfile = fns[i])
+                   out <- read_embrace_plus(zipfile = fns[i], type = r$type)
                  },
                  nowatch = {
                    out <- read_nowatch(fns[i])
@@ -426,7 +426,7 @@ server <- function(id, device, r) {
                    rv$data <- rbind_e4(data)
                  },
                  `embrace-plus` = {
-                   rv$data <- rbind_embrace_plus(data[[1]])
+                   rv$data <- rbind_embrace_plus(data)
                  },
                  nowatch = {
                    rv$data <- rbind_nowatch(data)
