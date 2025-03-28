@@ -1108,8 +1108,9 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
     output$dt_annotations_visible <- renderDT({
 
       current_visible_annotations() |>
-        mutate(Date = format(Date, "%Y-%m-%d"),
+        mutate(`Start Date` = format(`Start Date`, "%Y-%m-%d"),
                Start = format(Start, "%H:%M:%S"),
+               `End Date` = format(`End Date`, "%Y-%m-%d"),
                End = format(End, "%H:%M:%S")
         ) |>
         datatable(width = 500)
