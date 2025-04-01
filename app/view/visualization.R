@@ -91,9 +91,12 @@ ui <- function(id) {
 
                  tags$div(id = ns("stress_options"),
                           tags$h4("STRESS ALGORITHM"),
-                          checkboxInput(ns("incl_stress_algorithm"),
-                                        "Include stress algorithm",
-                                        value = TRUE))
+                          checkboxInput(
+                            ns("incl_stress_algorithm"),
+                            "Include stress algorithm",
+                            value = FALSE
+                          )
+                 )
           )
         )
 
@@ -442,8 +445,11 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
                    lineStyle = list(
                      width = 1
                    )) |>
-            e_title(input$txt_plot_main_title,
-                    left = "50%") |>
+            e_title(
+              input$txt_plot_main_title,
+              left = "50%",
+              top = 0
+            ) |>
             e_x_axis(
               axisPointer = list(show = TRUE),
               axisLabel = list(
@@ -460,7 +466,10 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
             ) |>
             e_datazoom(show = FALSE) |>
             e_tooltip(trigger = "axis") |>
-            e_legend(show = TRUE) |>
+            e_legend(
+              show = TRUE,
+              top = 30
+            ) |>
             e_group("daily") |>
             e_grid(
               top = 60,
@@ -854,8 +863,11 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
         ungroup() |>
         mutate(week = format(DateTime, "%W")) |>
         group_by(week) |>
-        summarise(weekly_activity_time = mean(activity_time),
-                  date = max(date))
+        summarise(
+          # Convert to hours instead of minutes
+          weekly_activity_time = mean(activity_time) / 60,
+          date = max(date)
+        )
 
       if ("STRESS" %in% names(data)) {
         df_stress <- data$STRESS |>
@@ -936,7 +948,8 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
       output$echarts_problemtarget_act_time <- renderEcharts4r({
         df_activity |>
           group_by(date) |>
-          summarise(activity_time = sum(activity_time, na.rm = TRUE)) |>
+          # Convert to hours instead of minutes
+          summarise(activity_time = sum(activity_time, na.rm = TRUE) / 60) |>
           arrange(desc(date)) |>
           mutate(date = as.character(date)) |>
           e_charts(date) |>
@@ -945,7 +958,7 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
           e_data(week_data) |>
           e_line(weekly_activity_time,
                  name = "Weekly avg") |>
-          e_y_axis(name = "Minutes",
+          e_y_axis(name = "Hours",
                    nameGap = 0,
                    nameLocation = "end",
                    nameTextStyle = list(
@@ -959,7 +972,7 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
           ) |>
           e_title("Activity Time") |>
           e_flip_coords() |>
-          e_grid(left = 70)  |>
+          e_grid(left = 70) |>
           e_legend(
             left = "left",
             top = 30
@@ -1095,8 +1108,9 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
     output$dt_annotations_visible <- renderDT({
 
       current_visible_annotations() |>
-        mutate(Date = format(Date, "%Y-%m-%d"),
+        mutate(`Start Date` = format(`Start Date`, "%Y-%m-%d"),
                Start = format(Start, "%H:%M:%S"),
+               `End Date` = format(`End Date`, "%Y-%m-%d"),
                End = format(End, "%H:%M:%S")
         ) |>
         datatable(width = 500)

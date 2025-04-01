@@ -114,9 +114,10 @@ read_calendar <- function(fn){
          txt = read.csv2(fn)
   ) |>
     as_tibble() |>
-    mutate(Date = as.Date(Date),  ## ????
-           Start = rectify_datetime(Date, Start),
-           End = rectify_datetime(Date, End)) |>
+    mutate(`Start Date` = as.Date(`Start Date`),  ## ????
+           Start = rectify_datetime(`Start Date`, Start),
+           `End Date` = as.Date(`End Date`),
+           End = rectify_datetime(`End Date`, End)) |>
     group_by(Text) |>
     mutate(Color = ifelse(is.na(Color), sample(default_colors(), 1), Color))
 
@@ -125,7 +126,7 @@ read_calendar <- function(fn){
 
 validate_calendar <- function(data){
 
-  nms <- c("Date" ,"Start", "End" , "Text")
+  nms <- c("Start Date" ,"Start", "End Date", "End" , "Text")
 
   all(nms %in% names(data))
 

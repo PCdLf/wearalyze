@@ -121,7 +121,7 @@ server <- function(id, device, r) {
       data <- functions$read_calendar(calendar_file()$datapath)
 
       if(!functions$validate_calendar(data)){
-        toastr_error("Calendar data must have columns Date, Start, End, Text, (Color), click Help!")
+        toastr_error("Calendar data must have columns Start Date, Start, End Date, End, Text, (Color), click Help!")
       } else {
 
         data <- functions$calendar_add_color(data)
@@ -141,8 +141,9 @@ server <- function(id, device, r) {
       req(calendar_out())
 
       calendar_out() |>
-        mutate(Date = format(Date, "%Y-%m-%d"),
+        mutate(`Start Date` = format(`Start Date`, "%Y-%m-%d"),
                Start = format(Start, "%H:%M:%S"),
+               `End Date` = format(`End Date`, "%Y-%m-%d"),
                End = format(End, "%H:%M:%S")
         ) |>
         datatable(selection = "none")
