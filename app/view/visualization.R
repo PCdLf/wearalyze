@@ -502,7 +502,8 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
           e_charts(DateTime) |>
           e_line(EDA,
                  name = "EDA",
-                 symbol = "none",
+                 symbolSize = "0.01",
+                 # symbol = "none",
                  color = constants$app_config$visualisation$eda$color,
                  lineStyle = list(
                    width = 1
@@ -525,19 +526,22 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
             max = series_options()$EDA$yaxis_range[2]
           ) |>
           e_datazoom(show = FALSE) |>
-          e_tooltip(trigger = "axis") |>
+          e_tooltip(trigger = "item") |>
           e_legend(show = FALSE) |>
           e_group("daily") |>
+          e_connect_group("daily") |>
           e_grid(
             top = 60,
             bottom = 20
           ) |>
-          e_mark_line(data = list(yAxis = line_val), title = line_val)
+          e_mark_line(data = list(yAxis = line_val),
+                      title = line_val,
+                      tooltip = list(formatter = "")
+          )
 
         chart <- functions_devices$create_echarts4r_events(chart,
                                                            annotatedata,
                                                            yrange = series_options()$EDA$yaxis_range)
-
 
         dailygraphs1(chart)
 
@@ -557,7 +561,8 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
           e_charts(DateTime) |>
           e_line(HR,
                  name = "HR",
-                 symbol = "none",
+                 symbolSize = "0.01",
+                 # symbol = "none",
                  color = constants$app_config$visualisation$hr$color,
                  lineStyle = list(
                    width = 1
@@ -577,9 +582,10 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
             max = series_options()$HR$yaxis_range[2]
           ) |>
           e_datazoom(show = FALSE) |>
-          e_tooltip(trigger = "axis") |>
+          e_tooltip(trigger = "item") |>
           e_legend(show = FALSE) |>
           e_group("daily") |>
+          e_connect_group("daily") |>
           e_grid(
             top = 10,
             bottom = 20
@@ -608,7 +614,8 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
           e_charts(DateTime) |>
           e_line(TEMP,
                  name = "Temperature",
-                 symbol = "none",
+                 symbolSize = "0.01",
+                 # symbol = "none",
                  color = constants$app_config$visualisation$temp$color,
                  lineStyle = list(
                    width = 1
@@ -628,9 +635,10 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
             max = series_options()$TEMP$yaxis_range[2]
           ) |>
           e_datazoom(show = FALSE) |>
-          e_tooltip(trigger = "axis") |>
+          e_tooltip(trigger = "item") |>
           e_legend(show = FALSE) |>
           e_group("daily") |>
+          e_connect_group("daily") |>
           e_grid(
             top = 10,
             bottom = 20
@@ -659,7 +667,8 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
           e_charts(DateTime) |>
           e_line(MOVE,
                  name = "MOVE",
-                 symbol = "none",
+                 symbolSize = "0.01",
+                 # symbol = "none",
                  color = constants$app_config$visualisation$move[[device]][[r$type]]$color,
                  lineStyle = list(
                    width = 1
@@ -679,7 +688,7 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
             max = series_options()$MOVE$yaxis_range[2]
           ) |>
           e_datazoom(type = "slider") |>
-          e_tooltip(trigger = "axis") |>
+          e_tooltip(trigger = "item") |>
           e_legend(show = FALSE) |>
           e_group("daily") |>
           e_connect_group("daily") |>

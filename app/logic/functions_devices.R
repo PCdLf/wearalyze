@@ -215,6 +215,9 @@ create_echarts4r_events <- function(chart, annotatedata, yrange, label = TRUE) {
                                 label = list(
                                   formatter = title,
                                   position = 'insideMiddleTop'
+                                ),
+                                tooltip = list(
+                                  formatter = annotatedata$Text[i]
                                 )
                                 )
         )
@@ -225,9 +228,14 @@ create_echarts4r_events <- function(chart, annotatedata, yrange, label = TRUE) {
             data = list(
               list(xAxis = annotatedata$Start[i],
                    yAxis = yrange[1],
-                   itemStyle = list(color = annotatedata$Color[i])),
+                   itemStyle = list(color = annotatedata$Color[i]),
+                   tooltip = list(
+                     formatter = annotatedata$Text[i]
+                   )
+              ),
               list(xAxis = annotatedata$End[i],
-                   yAxis = yrange[2])
+                   yAxis = yrange[2]
+              )
             )
           )
       }
