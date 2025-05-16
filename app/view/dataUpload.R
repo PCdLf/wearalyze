@@ -47,15 +47,18 @@ ui <- function(id, device) {
                )
         )
       ),
-      fluidRow(style = "padding-top: 24px;",
+      fluidRow(
+        style = "padding-top: 24px;",
 
-               column(4, functions$logo_image_with_link("static/logos/logo_deborg.svg", "https://www.deborg.nl/", width = "100%")),
-               column(4, functions$logo_image_with_link("static/logos/mit_media_lab.png", "https://www.media.mit.edu/groups/affective-computing/overview/", width = "100%")),
-               column(4, functions$logo_image_with_link("static/logos/u_twente.png","https://www.utwente.nl/nl/bms/pgt/", width = "100%"))
+        column(3, functions$logo_image_with_link("static/logos/logo_deborg.svg", "https://www.deborg.nl/", width = "100%")),
+        column(3, functions$logo_image_with_link("static/logos/mit_media_lab.png", "https://www.media.mit.edu/groups/affective-computing/overview/", width = "100%")),
+        column(3, functions$logo_image_with_link("static/logos/u_twente.png", "https://www.utwente.nl/nl/bms/pgt/", width = "100%")),
+        column(3, functions$logo_image_with_link("static/logos/umcu.png", "https://www.umcutrecht.nl/nl/innovatie-in-de-psychiatrie", width = "100%"))
       ),
       fluidRow(
-        column(4, functions$logo_image_with_link("static/logos/umcu.png", "https://www.umcutrecht.nl/nl/innovatie-in-de-psychiatrie", width = "100%")),
-        column(4, functions$logo_image_with_link("static/logos/radboud.png","https://www.ru.nl/bsi/", width = "100%"))
+        column(3, functions$logo_image_with_link("static/logos/radboud.png", "https://www.ru.nl/bsi/", width = "100%")),
+        column(3, functions$logo_image_with_link("static/logos/tbs_nederland.png", "https://tbsnederland.nl", width = "100%")),
+        column(3, functions$logo_image_with_link("static/logos/tilburg_university.png", "https://www.tilburguniversity.edu/nl", width = "100%"))
 
       )
     ),
