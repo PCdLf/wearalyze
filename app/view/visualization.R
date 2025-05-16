@@ -48,10 +48,17 @@ ui <- function(id) {
         fluidRow(
           column(5,
                  textInput(ns("txt_plot_main_title"), "Title"),
-                 tags$label(class = "control-label", "Annotations"),
-                 checkboxInput(ns("check_add_calendar_annotation"),
-                               label = "Calendar events",
-                               value = TRUE),
+                 functions$side_by_side(
+                   tags$div(
+                     tags$label(class = "control-label", "Annotations"),
+                     checkboxInput(
+                       ns("check_add_calendar_annotation"),
+                       label = "Calendar events",
+                       value = TRUE
+                     )
+                   ),
+                   uiOutput(ns("ui_calendar_event_labels"))
+                 ),
 
                  uiOutput(ns("ui_plot_agg_data")),
                  uiOutput(ns("ui_plot_tags")),
@@ -269,6 +276,23 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
 
     })
 
+    # Show label setting only when calendar data is displayed.
+    output$ui_calendar_event_labels <- renderUI({
+      if (input$check_add_calendar_annotation) {
+        tagList(
+          radioButtons(
+            ns("show_calendar_event_labels"),
+            label = "Show calendar event labels",
+            choices = c("Yes" = TRUE, "No" = FALSE),
+            inline = TRUE,
+            selected = TRUE
+          )
+        )
+      } else {
+        NULL
+      }
+    })
+
     output$ui_plot_agg_data <- renderUI({
 
       if(r$more_than_24h){
@@ -419,28 +443,28 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
             e_charts(DateTime) |>
             e_line(TEMP,
                    name = "TEMP",
-                   symbol = "none",
+                   symbolSize = "0.01",
                    color = constants$app_config$visualisation$temp$color,
                    lineStyle = list(
                      width = 1
                    )) |>
             e_line(MOVE,
                    name = "MOVE",
-                   symbol = "none",
+                   symbolSize = "0.01",
                    color = constants$app_config$visualisation$move[[device]][[r$type]]$color,
                    lineStyle = list(
                      width = 1
                    )) |>
             e_line(EDA,
                    name = "EDA",
-                   symbol = "none",
+                   symbolSize = "0.01",
                    color = constants$app_config$visualisation$eda$color,
                    lineStyle = list(
                      width = 1
                    )) |>
             e_line(HR,
                    name = "HR",
-                   symbol = "none",
+                   symbolSize = "0.01",
                    color = constants$app_config$visualisation$hr$color,
                    lineStyle = list(
                      width = 1
@@ -465,7 +489,7 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
               max = 10
             ) |>
             e_datazoom(show = FALSE) |>
-            e_tooltip(trigger = "axis") |>
+            e_tooltip(trigger = "item") |>
             e_legend(
               show = TRUE,
               top = 30
@@ -476,9 +500,12 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
               bottom = 20
             )
 
-          chart <- functions_devices$create_echarts4r_events(chart,
-                                                             annotatedata,
-                                                             yrange = c(0, 10))
+          chart <- functions_devices$create_echarts4r_events(
+            chart,
+            annotatedata,
+            yrange = c(0, 10),
+            label = input$show_calendar_event_labels
+          )
 
           chart
 
@@ -503,7 +530,6 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
           e_line(EDA,
                  name = "EDA",
                  symbolSize = "0.01",
-                 # symbol = "none",
                  color = constants$app_config$visualisation$eda$color,
                  lineStyle = list(
                    width = 1
@@ -539,9 +565,12 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
                       tooltip = list(formatter = "")
           )
 
-        chart <- functions_devices$create_echarts4r_events(chart,
-                                                           annotatedata,
-                                                           yrange = series_options()$EDA$yaxis_range)
+        chart <- functions_devices$create_echarts4r_events(
+          chart,
+          annotatedata,
+          yrange = series_options()$EDA$yaxis_range,
+          label = input$show_calendar_event_labels
+        )
 
         dailygraphs1(chart)
 
@@ -562,7 +591,6 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
           e_line(HR,
                  name = "HR",
                  symbolSize = "0.01",
-                 # symbol = "none",
                  color = constants$app_config$visualisation$hr$color,
                  lineStyle = list(
                    width = 1
@@ -592,9 +620,12 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
           ) |>
           e_mark_line(data = list(yAxis = line_val), title = line_val)
 
-        chart <- functions_devices$create_echarts4r_events(chart,
-                                                           annotatedata,
-                                                           yrange = series_options()$HR$yaxis_range)
+        chart <- functions_devices$create_echarts4r_events(
+          chart,
+          annotatedata,
+          yrange = series_options()$HR$yaxis_range,
+          label = input$show_calendar_event_labels
+        )
 
         dailygraphs2(chart)
 
@@ -615,7 +646,6 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
           e_line(TEMP,
                  name = "Temperature",
                  symbolSize = "0.01",
-                 # symbol = "none",
                  color = constants$app_config$visualisation$temp$color,
                  lineStyle = list(
                    width = 1
@@ -645,9 +675,12 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
           ) |>
           e_mark_line(data = list(yAxis = line_val), title = line_val)
 
-        chart <- functions_devices$create_echarts4r_events(chart,
-                                                           annotatedata,
-                                                           yrange = series_options()$TEMP$yaxis_range)
+        chart <- functions_devices$create_echarts4r_events(
+          chart,
+          annotatedata,
+          yrange = series_options()$TEMP$yaxis_range,
+          label = input$show_calendar_event_labels
+        )
 
         dailygraphs3(chart)
 
@@ -668,7 +701,6 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
           e_line(MOVE,
                  name = "MOVE",
                  symbolSize = "0.01",
-                 # symbol = "none",
                  color = constants$app_config$visualisation$move[[device]][[r$type]]$color,
                  lineStyle = list(
                    width = 1
@@ -698,9 +730,12 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
           ) |>
           e_mark_line(data = list(yAxis = line_val), title = line_val)
 
-        chart <- functions_devices$create_echarts4r_events(chart,
-                                                           annotatedata,
-                                                           yrange = series_options()$MOVE$yaxis_range)
+        chart <- functions_devices$create_echarts4r_events(
+          chart,
+          annotatedata,
+          yrange = series_options()$MOVE$yaxis_range,
+          label = input$show_calendar_event_labels
+        )
 
         chart <- chart |>
           onRender(
