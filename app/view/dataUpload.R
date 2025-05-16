@@ -35,7 +35,8 @@ ui <- function(id, device) {
         column(8,
                tags$p(glue("This Shiny application was designed to visualize and process {constants$device_config[[device]]$company} {device_name} data.")),
                tags$p(glue("The {constants$device_config[[device]]$company} {device_name} is a wearable wristband that can be used to record physiological signals such as heart rate, temperature, movement and skin conductance.")),
-               tags$p("The data will not be permanently stored on the server, no trackers or cookies are used.")
+               tags$p("The data will not be permanently stored on the server, no trackers or cookies are used."),
+               tags$p("This application displays patient data. Do not share this information with third parties. This application is not intended for diagnostic use.")
         ),
 
         column(4,
