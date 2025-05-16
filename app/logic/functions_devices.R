@@ -4,6 +4,7 @@ box::use(
   dygraphs[dygraph, dyHighlight, dyOptions, dyUnzoom, dyLimit,
            dyAxis, dyEvent, dyRangeSelector, dyShading],
   echarts4r[e_mark_area, e_mark_line],
+  stringr[str_trunc],
   wearables[as_timeseries],
   zoo[index]
 )
@@ -205,7 +206,8 @@ create_echarts4r_events <- function(chart, annotatedata, yrange, label = TRUE) {
     for (i in 1:nrow(annotatedata)) {
 
       if (label) {
-        title <- annotatedata$Text[i]
+        # Truncate label if it is longer than the maximum number of characters.
+        title <- str_trunc(annotatedata$Text[i], width = 25, ellipsis = "...")
       } else {
         title <- ""
       }
