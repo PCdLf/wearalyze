@@ -16,6 +16,8 @@ The data can conveniently be uploaded via the app and is processed in immediatel
 
 This app is a [Rhino](https://github.com/Appsilon/rhino) project 🦏. Rhino makes use of [renv](https://rstudio.github.io/renv/index.html) to manage the project dependencies.
 
+This project requires R version 4.4.0.
+
 If you pull the project from GitHub, `renv` will automatically be downloaded and installed. 
 
 If everything is ok, the output will look as follows:
