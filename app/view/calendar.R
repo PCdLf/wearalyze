@@ -120,8 +120,10 @@ server <- function(id, device, r) {
 
       data <- functions$read_calendar(calendar_file()$datapath)
 
-      if(!functions$validate_calendar(data)){
+      if (!functions$validate_calendar(data)) {
         toastr_error("Calendar data must have columns Start Date, Start, End Date, End, Text, (Color), click Help!")
+      } else if (!functions$validate_calendar_rows(data)) {
+        toastr_error("Calendar data must not contain empty rows. Remove the empty rows from the file and upload again.")
       } else {
 
         data <- functions$calendar_add_color(data)
