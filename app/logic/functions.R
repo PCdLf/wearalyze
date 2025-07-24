@@ -132,6 +132,25 @@ validate_calendar <- function(data){
 
 }
 
+#' validate_calendar_rows
+#'
+#' @description
+#' Checks whether the given data frame contains any completely empty rows.
+#'
+#' @param data A data frame to be checked.
+#'
+#' @return TRUE if there are no empty rows, FALSE otherwise.
+#'
+#' @noRd
+validate_calendar_rows <- function(data) {
+  # Ignore the color column when checking for empty rows, as it always gets a
+  # value when data is read.
+  data$Color <- NULL
+  result <- !any(rowSums(is.na(data)) == ncol(data))
+
+  return(result)
+}
+
 read_problemtarget<- function(fn){
 
   ext <- tolower(file_ext(fn))

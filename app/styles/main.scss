@@ -56,7 +56,7 @@
   background-color: #bd2130;
   border-color: #b21f2d;
 }
-    
+
 .btn-primary{
   color: #fff;
 }
@@ -77,4 +77,13 @@ img.grayscale {
 img.grayscale:hover {
   filter: none;
   -webkit-filter: grayscale(0%);
+}
+
+.text-disclaimer {
+  background-color: #fff3cd;
+    border: 1px solid #ffeeba;
+    padding: 15px;
+    border-radius: 5px;
+    color: #856404;
+    font-weight: bold;
 }
