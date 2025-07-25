@@ -1029,7 +1029,7 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
 
         df_activity |>
           group_by(date) |>
-          summarise(score = mean(Score, na.rm = TRUE)) |>
+          summarise(score = mean(as.numeric(Score), na.rm = TRUE)) |>
           arrange(desc(date)) |>
           mutate(date = as.character(date)) |>
           e_charts(date) |>
