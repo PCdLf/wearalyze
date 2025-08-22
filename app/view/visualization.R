@@ -863,13 +863,6 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
 
       # Use non-aggregated data for target behavior visuals.
       data <- data()$data
-      # data <- data()
-      #
-      # if (is.null(input$rad_plot_agg) || input$rad_plot_agg == "Yes") {
-      #   data <- data$data_agg
-      # } else {
-      #   data <- data$data
-      # }
 
       functions$show_tab(ns("plottab2"))
 
