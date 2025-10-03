@@ -414,7 +414,44 @@ server <- function(id, device, r) {
                    out <- read_nowatch(fns[i])
                  })
 
-          if(is.null(out)){
+
+          # Optional tables without data are excluded in the dashboard.
+          optional_tables <- c(
+            "SLEEP", "RR", "WEAR", "ACT", "CAD", "CORTL", "HB", "RHR",
+            "STRESS", "EDA"
+          )
+          optional_tables <- optional_tables[optional_tables %in% names(out)]
+
+          # Specify which optional tables will be removed from the list.
+          removed_tables <- optional_tables[
+            sapply(optional_tables, function(table) {
+              nrow(out[[table]]) == 0
+            })
+          ]
+
+          out <- out[
+            sapply(names(out), function(table) {
+              # Remove the table from the list if the table is optional
+              # and has no data.
+              if (table %in% optional_tables) {
+                nrow(out[[table]]) > 0
+              } else {
+                # If the table is required, keep it in the list.
+                TRUE
+              }
+            })
+          ]
+
+          # Show warning message if empty tables have been deleted.
+          if (length(removed_tables) > 0) {
+            removed_tables <- paste0(removed_tables, collapse = ", ")
+            toastr_error(
+              glue("One or more data files ({removed_tables}) contained no data
+              and were excluded in the dashboard")
+            )
+          }
+
+          if (is.null(out) | any(sapply(out, nrow) == 0)) {
 
             toastr_error("One or more data files empty - check data!")
             break
