@@ -18,7 +18,7 @@ box::use(
         updateActionButton, p, tagAppendAttributes],
   shinycssloaders[withSpinner],
   shinyjs[hide, show],
-  shinytoastr[toastr_info, toastr_success],
+  shinytoastr[toastr_info, toastr_success, toastr_warning],
   shinyWidgets[pickerInput, updatePickerInput],
   stats[runif],
   tidyr[complete]
@@ -111,25 +111,41 @@ ui <- function(id) {
 
       # Daily graphs ---------------------------------
       nav_panel(
-        title = "Daily",
+        title = "Overview",
         icon = icon("chart-bar"),
         value = ns("plottab"),
+        withSpinner(
+          echarts4rOutput(ns("predicted_stress_level_plot"), height = "400px")
+        ),
+        uiOutput(ns("predicted_stress_level_notes"))
+      ),
+
+      # Parameters -----------------------------------
+      nav_panel(
+        title = "Parameters",
+        icon = icon("wave-square"),
+        value = ns("parameters_tab"),
         fluidRow(
-          column(3,
-                 offset = 1,
-                 pickerInput(ns("date_picker"),
-                             label = "Select day",
-                             choices = "All",
-                             selected = "All",
-                             width = "100%")
+          column(
+            width = 3,
+            offset = 1,
+            pickerInput(
+              ns("date_picker"),
+              label = "Select day",
+              choices = "All",
+              selected = "All",
+              width = "100%"
+            )
           ),
           column(
-            1,
+            width = 1,
             tagAppendAttributes(
               style = "margin-top:30px",
-              actionButton(ns("btn_update_dates"),
-                           "",
-                           icon = icon("sync"))
+              actionButton(
+                ns("btn_update_dates"),
+                "",
+                icon = icon("sync")
+              )
             )
           )
         ),
@@ -140,20 +156,20 @@ ui <- function(id) {
         ),
         withSpinner(
           id = ns("daily_graphs1_spinner"),
-          echarts4rOutput(ns("daily_graphs1"), height = "220px"),
+          echarts4rOutput(ns("daily_graphs1"), height = "220px")
         ),
         # Add spinner, but don't show, this gives a better loading UX
         withSpinner(
           type = 0,
-          echarts4rOutput(ns("daily_graphs2"), height = "220px"),
+          echarts4rOutput(ns("daily_graphs2"), height = "220px")
         ),
         withSpinner(
           type = 0,
-          echarts4rOutput(ns("daily_graphs3"), height = "220px"),
+          echarts4rOutput(ns("daily_graphs3"), height = "220px")
         ),
         withSpinner(
           type = 0,
-          echarts4rOutput(ns("daily_graphs4"), height = "220px"),
+          echarts4rOutput(ns("daily_graphs4"), height = "220px")
         ),
         uiOutput(ns("echarts_notes"))
       ),
@@ -202,6 +218,7 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
     # Functionality ---------------------------------
     ## Init -----------------------------------------
     functions$hide_tab(ns("plottab"))
+    functions$hide_tab(ns("parameters_tab"))
     functions$hide_tab(ns("plottab2"))
     functions$hide_tab(ns("plotannotations"))
 
@@ -339,13 +356,16 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
       }
 
       functions$show_tab(ns("plottab"))
+      functions$show_tab(ns("parameters_tab"))
 
       if (isTruthy(calendar())) {
         functions$show_tab(ns("plotannotations"))
       }
 
-      nav_select(id = "tabs",
-                 selected = ns("plottab"))
+      nav_select(
+        id = "tabs",
+        selected = ns("plottab")
+      )
 
       if(input$check_add_calendar_annotation){
         annotatedata <- calendar()
@@ -415,104 +435,196 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
       # create empty list for plots
       plot_list <- list()
 
-      output$stress_algorithm_plot <- renderEcharts4r({
+      ## Stress predictions --------------------------
+      stress_predictions <- reactive({
 
-        req(data())
-
-        if (input$incl_stress_algorithm) {
+        tryCatch({
 
           toastr_info("Applying stress algorithm 🚀")
 
-          predicted_data <- predict_stress$return_predictions(data, types = c("TEMP", "MOVE", "EDA", "HR"))
+          predicted_data <- predict_stress$return_predictions(
+            data,
+            types = c("TEMP", "MOVE", "EDA", "HR")
+          )
 
           toastr_success("Got predictions!")
           toastr_info("Rendering graphs...")
 
-          # combine into one dataframe, with DateTime as index
-          # only join datasets if they are available (not NULL)
-          plot_data <- data.frame(DateTime = predicted_data$TEMP$DateTime)
-          for (type in c("TEMP", "MOVE", "EDA", "HR")) {
-            if (!is.null(predicted_data[[type]])) {
-              plot_data <- plot_data |> left_join(predicted_data[[type]], by = "DateTime")
-            } else {
-              plot_data[[type]] <- NA
-            }
-          }
+          predict_stress$combine_predictions(predicted_data)
 
-          chart <- plot_data |>
-            e_charts(DateTime) |>
-            e_line(TEMP,
-                   name = "TEMP",
-                   symbolSize = "0.01",
-                   color = constants$app_config$visualisation$temp$color,
-                   lineStyle = list(
-                     width = 1
-                   )) |>
-            e_line(MOVE,
-                   name = "MOVE",
-                   symbolSize = "0.01",
-                   color = constants$app_config$visualisation$move[[device]][[r$type]]$color,
-                   lineStyle = list(
-                     width = 1
-                   )) |>
-            e_line(EDA,
-                   name = "EDA",
-                   symbolSize = "0.01",
-                   color = constants$app_config$visualisation$eda$color,
-                   lineStyle = list(
-                     width = 1
-                   )) |>
-            e_line(HR,
-                   name = "HR",
-                   symbolSize = "0.01",
-                   color = constants$app_config$visualisation$hr$color,
-                   lineStyle = list(
-                     width = 1
-                   )) |>
-            e_title(
-              input$txt_plot_main_title,
-              left = "50%",
-              top = 0
-            ) |>
-            e_x_axis(
-              axisPointer = list(show = TRUE),
-              axisLabel = list(
-                formatter = constants$yearMonthDate
-              )
-            ) |>
-            e_y_axis(
-              name = "Predicted Stress Level",
-              nameLocation = "center",
-              nameRotate = 90,
-              nameGap = 30,
-              min = 0,
-              max = 10
-            ) |>
-            e_datazoom(show = FALSE) |>
-            e_tooltip(trigger = "item") |>
-            e_legend(
-              show = TRUE,
-              top = 30
-            ) |>
-            e_group("daily") |>
-            e_grid(
-              top = 60,
-              bottom = 20
+        }, error = function(e) {
+          toastr_warning("Could not compute the predicted stress level")
+          NULL
+        })
+
+      })
+
+      # One line per parameter (TEMP, MOVE, EDA, HR) with the stress level that
+      # the model predicts for that parameter on its own.
+      output$stress_algorithm_plot <- renderEcharts4r({
+        # Guard before stress_predictions(), so the models are not run when the
+        # stress algorithm is switched off.
+        req(input$incl_stress_algorithm)
+
+        predictions <- stress_predictions()
+        req(predictions)
+
+        chart <- predictions |>
+          e_charts(DateTime) |>
+          e_line(
+            TEMP,
+            name = "TEMP",
+            symbolSize = "0.01",
+            color = constants$app_config$visualisation$temp$color,
+            lineStyle = list(
+              width = 1
             )
-
-          chart <- functions_devices$create_echarts4r_events(
-            chart,
-            annotatedata,
-            yrange = c(0, 10),
-            label = input$show_calendar_event_labels
+          ) |>
+          e_line(
+            MOVE,
+            name = "MOVE",
+            symbolSize = "0.01",
+            color = constants$app_config$visualisation$move[[device]][[r$type]]$color,
+            lineStyle = list(
+              width = 1
+            )
+          ) |>
+          e_line(
+            EDA,
+            name = "EDA",
+            symbolSize = "0.01",
+            color = constants$app_config$visualisation$eda$color,
+            lineStyle = list(
+              width = 1
+            )
+          ) |>
+          e_line(
+            HR,
+            name = "HR",
+            symbolSize = "0.01",
+            color = constants$app_config$visualisation$hr$color,
+            lineStyle = list(
+              width = 1
+            )
+          ) |>
+          e_title(
+            input$txt_plot_main_title,
+            left = "50%",
+            top = 0
+          ) |>
+          e_x_axis(
+            axisPointer = list(show = TRUE),
+            axisLabel = list(
+              formatter = constants$yearMonthDate
+            )
+          ) |>
+          e_y_axis(
+            name = "Predicted Stress Level",
+            nameLocation = "center",
+            nameRotate = 90,
+            nameGap = 30,
+            min = 0,
+            max = 10
+          ) |>
+          e_datazoom(show = FALSE) |>
+          e_tooltip(trigger = "item") |>
+          e_legend(
+            show = TRUE,
+            top = 30
+          ) |>
+          e_group("daily") |>
+          e_grid(
+            top = 60,
+            bottom = 20
           )
 
-          chart
+        functions_devices$create_echarts4r_events(
+          chart,
+          annotatedata,
+          yrange = c(0, 10),
+          label = input$show_calendar_event_labels
+        )
 
-        } else {
-          NULL
+      })
+
+      ## Predicted stress level ----------------------
+      # One line with the overall stress level: the weighted average over the
+      # per parameter predictions of the stress algorithm.
+      output$predicted_stress_level_plot <- renderEcharts4r({
+        plot_data <- stress_predictions()
+        req(plot_data)
+
+        plot_data$predicted_stress <- predict_stress$weighted_stress_score(plot_data)
+
+        yrange <- as.numeric(constants$app_config$visualisation$predicted_stress$yrange)
+
+        chart <- plot_data |>
+          e_charts(DateTime) |>
+          e_line(
+            predicted_stress,
+            name = "Predicted stress level",
+            symbolSize = "0.01",
+            color = constants$app_config$visualisation$predicted_stress$color,
+            lineStyle = list(
+              width = 1
+            )
+          ) |>
+          e_title(
+            input$txt_plot_main_title,
+            left = "50%",
+            top = 0
+          ) |>
+          e_x_axis(
+            axisPointer = list(show = TRUE),
+            axisLabel = list(
+              formatter = constants$yearMonthDate
+            )
+          ) |>
+          e_y_axis(
+            name = "Predicted stress level",
+            nameLocation = "center",
+            nameRotate = 90,
+            nameGap = 30,
+            min = yrange[1],
+            max = yrange[2]
+          ) |>
+          e_datazoom(type = "slider") |>
+          e_tooltip(trigger = "item") |>
+          e_legend(show = FALSE) |>
+          e_grid(
+            top = 60,
+            bottom = 60
+          )
+
+        functions_devices$create_echarts4r_events(
+          chart,
+          annotatedata,
+          yrange = yrange,
+          label = input$show_calendar_event_labels
+        )
+
+      })
+
+      # Which parameters actually contributed. With the weights renormalised
+      # per row, a device that misses a signal still gets a score, so name the
+      # parameters it is based on.
+      output$predicted_stress_level_notes <- renderUI({
+        predictions <- stress_predictions()
+        req(predictions)
+
+        weights <- predict_stress$stress_weights
+
+        used <- names(weights)[vapply(names(weights), function(type) {
+          any(!is.na(predictions[[type]]))
+        }, logical(1))]
+
+        if (length(used) == 0) {
+          return(p("No parameters available to compute a predicted stress level."))
         }
 
+        p(paste0("Weighted average of ",
+                 paste(paste0(used, " (", weights[used], ")"), collapse = ", "),
+                 ". Each parameter is predicted on a 1-7 scale."))
       })
 
       output$daily_graphs1 <- renderEcharts4r({
