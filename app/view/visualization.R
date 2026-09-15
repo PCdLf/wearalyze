@@ -2,7 +2,8 @@
 box::use(
   bslib[navset_tab, nav_panel, nav_select, card, card_header],
   DT[datatable, DTOutput, renderDT],
-  dplyr[arrange, filter, group_by, join_by, left_join, mutate, summarise, ungroup],
+  dplyr[arrange, filter, group_by, join_by, left_join, mutate, select, summarise,
+        ungroup],
   dygraphs[dygraphOutput, renderDygraph],
   echarts4r[e_bar, e_charts, e_connect_group, e_data, e_datazoom,
             e_flip_coords, e_grid, e_group, e_heatmap,
@@ -117,7 +118,14 @@ ui <- function(id) {
         withSpinner(
           echarts4rOutput(ns("predicted_stress_level_plot"), height = "400px")
         ),
-        uiOutput(ns("predicted_stress_level_notes"))
+        # The echarts grid is inset by 10% on both sides (the echarts default,
+        # e_grid() for this plot only sets top and bottom), so inset everything
+        # below the plot by the same amount to line it up with the plot.
+        div(
+          style = "padding-left: 10%; padding-right: 10%;",
+          uiOutput(ns("predicted_stress_level_notes")),
+          uiOutput(ns("ui_calendar_overview"))
+        )
       ),
 
       # Parameters -----------------------------------
@@ -1233,6 +1241,56 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
       updateActionButton(session, "btn_make_plot", label = "Update plot", icon = icon("sync"))
 
     }) |> bindEvent(input$btn_make_plot)
+
+    ## Calendar overview ---------------------------
+    # Calendar events below the overview plot, in the same colors the events
+    # are drawn with in the plot.
+    output$ui_calendar_overview <- renderUI({
+      req(calendar())
+
+      message("visualization - ui_calendar_overview")
+
+      tagList(
+        tags$hr(),
+        tags$h5("Calendar"),
+        DTOutput(ns("dt_calendar_overview"))
+      )
+    })
+
+    output$dt_calendar_overview <- renderDT({
+      req(calendar())
+
+      message("visualization - dt_calendar_overview")
+
+      calendar() |>
+        ungroup() |>
+        arrange(Start) |>
+        mutate(
+          Start = format(Start, "%Y-%m-%d %H:%M"),
+          Dot = paste0("<span style='display:inline-block; width:12px; ",
+                       "height:12px; border-radius:50%; background-color:",
+                       Color, ";'></span>"),
+          Activity = Text
+        ) |>
+        select(Start, Dot, Activity) |>
+        datatable(
+          escape = FALSE,
+          rownames = FALSE,
+          selection = "none",
+          colnames = c("Start date", "Color", "Activity"),
+          options = list(
+            lengthChange = FALSE,
+            searching = FALSE,
+            paging = FALSE,
+            info = FALSE,
+            columnDefs = list(
+              list(targets = "Start", width = "120px"),
+              list(targets = "Dot", orderable = FALSE, width = "20px")
+            )
+          )
+        )
+
+    })
 
     ## Annotations ---------------------------------
     current_visible_annotations <- reactive({
