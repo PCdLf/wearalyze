@@ -213,30 +213,36 @@ create_echarts4r_events <- function(chart, annotatedata, yrange, label = TRUE) {
       }
 
       chart <- chart |>
-        e_mark_line(data = list(xAxis = annotatedata$Start[i],
-                                label = list(
-                                  formatter = title,
-                                  position = 'insideMiddleTop'
-                                ),
-                                tooltip = list(
-                                  formatter = annotatedata$Text[i]
-                                )
-                                )
+        e_mark_line(
+          data = list(
+            xAxis = annotatedata$Start[i],
+            label = list(
+              formatter = title,
+              position = 'insideMiddleTop'
+            ),
+            tooltip = list(
+              formatter = annotatedata$Text[i],
+              extraCssText = constants$tooltip_css
+            )
+          )
         )
 
       if(!is.na(annotatedata$End[i])) {
         chart <- chart |>
           e_mark_area(
             data = list(
-              list(xAxis = annotatedata$Start[i],
-                   yAxis = yrange[1],
-                   itemStyle = list(color = annotatedata$Color[i]),
-                   tooltip = list(
-                     formatter = annotatedata$Text[i]
-                   )
+              list(
+                xAxis = annotatedata$Start[i],
+                yAxis = yrange[1],
+                itemStyle = list(color = annotatedata$Color[i]),
+                tooltip = list(
+                  formatter = annotatedata$Text[i],
+                  extraCssText = constants$tooltip_css
+                )
               ),
-              list(xAxis = annotatedata$End[i],
-                   yAxis = yrange[2]
+              list(
+                xAxis = annotatedata$End[i],
+                yAxis = yrange[2]
               )
             )
           )

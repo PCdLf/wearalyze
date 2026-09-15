@@ -527,7 +527,7 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
             max = 10
           ) |>
           e_datazoom(show = FALSE) |>
-          e_tooltip(trigger = "item") |>
+          e_tooltip(trigger = "item", extraCssText = constants$tooltip_css) |>
           e_legend(
             show = TRUE,
             top = 30
@@ -589,7 +589,7 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
             max = yrange[2]
           ) |>
           e_datazoom(type = "slider") |>
-          e_tooltip(trigger = "item") |>
+          e_tooltip(trigger = "item", extraCssText = constants$tooltip_css) |>
           e_legend(show = FALSE) |>
           e_grid(
             top = 60,
@@ -664,7 +664,7 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
             max = series_options()$EDA$yaxis_range[2]
           ) |>
           e_datazoom(show = FALSE) |>
-          e_tooltip(trigger = "item") |>
+          e_tooltip(trigger = "item", extraCssText = constants$tooltip_css) |>
           e_legend(show = FALSE) |>
           e_group("daily") |>
           e_connect_group("daily") |>
@@ -722,7 +722,7 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
             max = series_options()$HR$yaxis_range[2]
           ) |>
           e_datazoom(show = FALSE) |>
-          e_tooltip(trigger = "item") |>
+          e_tooltip(trigger = "item", extraCssText = constants$tooltip_css) |>
           e_legend(show = FALSE) |>
           e_group("daily") |>
           e_connect_group("daily") |>
@@ -777,7 +777,7 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
             max = series_options()$TEMP$yaxis_range[2]
           ) |>
           e_datazoom(show = FALSE) |>
-          e_tooltip(trigger = "item") |>
+          e_tooltip(trigger = "item", extraCssText = constants$tooltip_css) |>
           e_legend(show = FALSE) |>
           e_group("daily") |>
           e_connect_group("daily") |>
@@ -832,7 +832,7 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
             max = series_options()$MOVE$yaxis_range[2]
           ) |>
           e_datazoom(type = "slider") |>
-          e_tooltip(trigger = "item") |>
+          e_tooltip(trigger = "item", extraCssText = constants$tooltip_css) |>
           e_legend(show = FALSE) |>
           e_group("daily") |>
           e_connect_group("daily") |>
