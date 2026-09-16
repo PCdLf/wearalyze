@@ -10,7 +10,7 @@ box::use(
             e_legend, e_line, e_mark_area, e_mark_line, e_visual_map,
             e_x_axis, e_y_axis, e_title, e_tooltip,
             echarts4rOutput, renderEcharts4r],
-  htmlwidgets[onRender],
+  htmlwidgets[JS, onRender],
   lubridate[ymd_hms],
   scales[rescale],
   shiny[actionButton, bindEvent, br, checkboxInput, column, dateRangeInput, div,
@@ -121,7 +121,8 @@ ui <- function(id) {
         # around the plot by the same amount to line it up with the plot.
         div(
           style = "padding: 15px 10% 0 10%;",
-          uiOutput(ns("ui_overview_date_range"))
+          uiOutput(ns("ui_overview_date_range")),
+          tags$h5("Predicted stress level", style = "margin-bottom: 0;")
         ),
         withSpinner(
           echarts4rOutput(ns("predicted_stress_level_plot"), height = "400px")
@@ -616,6 +617,10 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
 
         yrange <- as.numeric(constants$app_config$visualisation$predicted_stress$yrange)
 
+        # Only keep room above the plotting area for the title when a title was
+        # filled in, otherwise it is a gap between the heading and the plot.
+        grid_top <- if (isTruthy(input$txt_plot_main_title)) 40 else 10
+
         chart <- plot_data |>
           e_charts(DateTime) |>
           e_line(
@@ -649,16 +654,95 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
           e_tooltip(trigger = "item", extraCssText = constants$tooltip_css) |>
           e_legend(show = FALSE) |>
           e_grid(
-            top = 60,
+            top = grid_top,
             bottom = 30
           )
 
-        functions_devices$create_echarts4r_events(
+        # No labels or arrow heads on the events here: the table below the plot
+        # already names every event, and the tooltip gives the full text.
+        chart <- functions_devices$create_echarts4r_events(
           chart,
           overview_annotations,
           yrange = yrange,
-          label = input$show_calendar_event_labels
+          label = FALSE,
+          arrow = FALSE,
+          color_lines = TRUE
         )
+
+        # Highlight the calendar event that is hovered on in the table below the
+        # plot.
+        chart |>
+          onRender(
+            sprintf("function(el, x) {
+              var chart = this.getChart();
+              var tableId = '%s';
+              var highlighting = false;
+
+              // Only highlight while the mouse is on the event itself. The few
+              // pixels of slack are there because an event without an end time
+              // is drawn as a line rather than as an area, and a line of a
+              // couple of pixels wide is otherwise impossible to point at.
+              var reach = 3;
+
+              function rows() {
+                var table = document.getElementById(tableId);
+                return table ? table.querySelectorAll('tbody tr') : [];
+              }
+
+              function clear() {
+                if (!highlighting) return;
+                highlighting = false;
+                rows().forEach(function(row) {
+                  row.classList.remove('activity-hovered');
+                });
+              }
+
+              // Distance in pixels between the mouse and the band the event is
+              // drawn as, 0 when the mouse is on the event itself. Events
+              // without an end time are a single moment in the plot.
+              function distance(row, atX) {
+                var start = parseFloat(row.getAttribute('data-start'));
+                var end = parseFloat(row.getAttribute('data-end'));
+                if (isNaN(start)) return Infinity;
+                if (isNaN(end)) end = start;
+
+                var from = chart.convertToPixel({xAxisIndex: 0}, start);
+                var to = chart.convertToPixel({xAxisIndex: 0}, end);
+
+                return Math.max(from - atX, atX - to, 0);
+              }
+
+              chart.getZr().on('mousemove', function(e) {
+                if (!chart.containPixel('grid', [e.offsetX, e.offsetY])) {
+                  clear();
+                  return;
+                }
+
+                var all = rows();
+                var distances = [];
+                var nearest = Infinity;
+
+                all.forEach(function(row) {
+                  var d = distance(row, e.offsetX);
+                  distances.push(d);
+                  nearest = Math.min(nearest, d);
+                });
+
+                if (nearest > reach) {
+                  clear();
+                  return;
+                }
+
+                // Events that overlap are equally near, highlight them together.
+                highlighting = true;
+                all.forEach(function(row, i) {
+                  row.classList.toggle('activity-hovered', distances[i] === nearest);
+                });
+              });
+
+              chart.getZr().on('globalout', clear);
+            }", ns("dt_calendar_overview"))
+          )
 
       })
 
@@ -1316,18 +1400,26 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
         functions$filter_dates(overview_date_range(), "Start") |>
         arrange(Start) |>
         mutate(
+          # The time window of the event, in the same unit as the echarts time
+          # axis (milliseconds since epoch) so the hover handler on the overview
+          # plot can compare them directly. As text, to keep the large numbers
+          # out of scientific notation. Events without an end time stay empty.
+          StartMillis = sprintf("%.0f", as.numeric(Start) * 1000),
+          EndMillis = ifelse(is.na(End),
+                             "",
+                             sprintf("%.0f", as.numeric(End) * 1000)),
           Start = format(Start, "%Y-%m-%d %H:%M"),
           Dot = paste0("<span style='display:inline-block; width:12px; ",
                        "height:12px; border-radius:50%; background-color:",
                        Color, ";'></span>"),
           Activity = Text
         ) |>
-        select(Start, Dot, Activity) |>
+        select(Start, Dot, Activity, StartMillis, EndMillis) |>
         datatable(
           escape = FALSE,
           rownames = FALSE,
           selection = "none",
-          colnames = c("Start date", "Color", "Activity"),
+          colnames = c("Start date", "Color", "Activity", "", ""),
           options = list(
             lengthChange = FALSE,
             searching = FALSE,
@@ -1335,7 +1427,18 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
             info = FALSE,
             columnDefs = list(
               list(targets = "Start", width = "120px"),
-              list(targets = "Dot", orderable = FALSE, width = "20px")
+              list(targets = "Dot", orderable = FALSE, width = "20px"),
+              # The time window is only there for the hover handler on the
+              # overview plot, don't show it.
+              list(targets = c("StartMillis", "EndMillis"), visible = FALSE)
+            ),
+            # Put the time window on the row itself, so the hover handler on the
+            # overview plot can find the event it is hovering on.
+            rowCallback = JS(
+              "function(row, data) {",
+              "  row.setAttribute('data-start', data[3]);",
+              "  row.setAttribute('data-end', data[4]);",
+              "}"
             )
           )
         )
