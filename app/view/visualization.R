@@ -13,7 +13,8 @@ box::use(
   htmlwidgets[onRender],
   lubridate[ymd_hms],
   scales[rescale],
-  shiny[actionButton, bindEvent, br, checkboxInput, column, div, fluidRow, hr,
+  shiny[actionButton, bindEvent, br, checkboxInput, column, dateRangeInput, div,
+        fluidRow, hr,
         icon, isTruthy, moduleServer, NS, observe, radioButtons,
         reactive, reactiveVal, renderUI, req, tagList, tags, textInput, uiOutput,
         updateActionButton, p, tagAppendAttributes],
@@ -115,12 +116,16 @@ ui <- function(id) {
         title = "Overview",
         icon = icon("chart-bar"),
         value = ns("plottab"),
+        # The echarts grid is inset by 10% on both sides (the echarts default,
+        # e_grid() for this plot only sets top and bottom), so inset everything
+        # around the plot by the same amount to line it up with the plot.
+        div(
+          style = "padding: 15px 10% 0 10%;",
+          uiOutput(ns("ui_overview_date_range"))
+        ),
         withSpinner(
           echarts4rOutput(ns("predicted_stress_level_plot"), height = "400px")
         ),
-        # The echarts grid is inset by 10% on both sides (the echarts default,
-        # e_grid() for this plot only sets top and bottom), so inset everything
-        # below the plot by the same amount to line it up with the plot.
         div(
           style = "padding-left: 10%; padding-right: 10%;",
           uiOutput(ns("predicted_stress_level_notes")),
@@ -259,6 +264,41 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
     observe({
       req(input$date_picker)
       r$chosen_dates <- input$date_picker
+    })
+
+    ## Overview date filter -------------------------
+    # Start and end date above the overview plot. Filters both the plot and the
+    # calendar table below it. Rendered from the data, so the bounds and the
+    # initial selection always cover the full measurement period.
+    output$ui_overview_date_range <- renderUI({
+      req(data()$data)
+
+      datetimes <- data()$data[[1]]$DateTime
+      req(datetimes)
+
+      dates <- as.Date(range(datetimes, na.rm = TRUE), tz = Sys.timezone())
+
+      dateRangeInput(
+        ns("overview_date_range"),
+        label = "Filter on date",
+        start = dates[1],
+        end = dates[2],
+        min = dates[1],
+        max = dates[2],
+        format = "yyyy-mm-dd",
+        separator = " to "
+      )
+    })
+
+    overview_date_range <- reactive({
+      selected <- input$overview_date_range
+
+      # No selection (yet), or a half filled in range: don't filter.
+      if (!isTruthy(selected) || any(is.na(selected))) {
+        return(NULL)
+      }
+
+      as.Date(selected)
     })
 
     ## Settings -------------------------------------
@@ -562,6 +602,16 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
         plot_data <- stress_predictions()
         req(plot_data)
 
+        plot_data <- functions$filter_dates(plot_data, overview_date_range())
+        req(nrow(plot_data) > 0)
+
+        # Only annotate the events within the selected range, events outside of
+        # it would stretch the x axis beyond the filtered data.
+        overview_annotations <- functions$filter_dates(annotatedata, overview_date_range(), "Start")
+        if (!is.null(overview_annotations) && nrow(overview_annotations) == 0) {
+          overview_annotations <- NULL
+        }
+
         plot_data$predicted_stress <- predict_stress$weighted_stress_score(plot_data)
 
         yrange <- as.numeric(constants$app_config$visualisation$predicted_stress$yrange)
@@ -596,17 +646,16 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
             min = yrange[1],
             max = yrange[2]
           ) |>
-          e_datazoom(type = "slider") |>
           e_tooltip(trigger = "item", extraCssText = constants$tooltip_css) |>
           e_legend(show = FALSE) |>
           e_grid(
             top = 60,
-            bottom = 60
+            bottom = 30
           )
 
         functions_devices$create_echarts4r_events(
           chart,
-          annotatedata,
+          overview_annotations,
           yrange = yrange,
           label = input$show_calendar_event_labels
         )
@@ -1264,6 +1313,7 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
 
       calendar() |>
         ungroup() |>
+        functions$filter_dates(overview_date_range(), "Start") |>
         arrange(Start) |>
         mutate(
           Start = format(Start, "%Y-%m-%d %H:%M"),

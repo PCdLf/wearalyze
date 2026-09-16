@@ -82,6 +82,40 @@ data_datetime_range <- function(data){
 
 }
 
+#' filter_dates
+#'
+#' @description
+#' Keeps the rows of a data frame whose date in `column` falls within the given
+#' date range.
+#'
+#' @details
+#' The data is returned unfiltered when there is nothing to filter on: no
+#' (complete) range, no data, or a `column` that is missing from `data`.
+#' Timestamps are converted to dates in the system time zone, and rows whose
+#' `column` is NA are dropped whenever filtering does take place.
+#'
+#' @param data A data frame to filter on date, or NULL.
+#' @param range A vector of two dates, the start and the end of the range, both
+#'   inclusive, or NULL.
+#' @param column The name of the column holding the date or timestamp to filter
+#'   on, for example "DateTime" for measurements and "Start" for calendar
+#'   events.
+#'
+#' @return `data` with only the rows inside `range`, or `data` unchanged when no
+#'   filtering is possible.
+#'
+#' @noRd
+filter_dates <- function(data, range, column = "DateTime"){
+
+  if (is.null(data) || is.null(range) || !column %in% names(data)) {
+    return(data)
+  }
+
+  dates <- as.Date(data[[column]], tz = Sys.timezone())
+
+  data[!is.na(dates) & dates >= range[1] & dates <= range[2], , drop = FALSE]
+}
+
 rectify_datetime <- function(date, time){
   ISOdatetime(year(date), month(date), day(date),
               hour(time), minute(time), second(time))
