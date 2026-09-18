@@ -10,6 +10,7 @@ box::use(
             e_legend, e_line, e_mark_area, e_mark_line, e_visual_map,
             e_x_axis, e_y_axis, e_title, e_tooltip,
             echarts4rOutput, renderEcharts4r],
+  htmltools[htmlEscape],
   htmlwidgets[JS, onRender],
   lubridate[ymd_hms],
   scales[rescale],
@@ -1409,14 +1410,20 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
                              "",
                              sprintf("%.0f", as.numeric(End) * 1000)),
           Start = format(Start, "%Y-%m-%d %H:%M"),
+          # Color is user-supplied (via the calendar upload), so it is HTML-
+          # escaped before being embedded in the style attribute to prevent
+          # it from breaking out of the attribute or injecting markup.
           Dot = paste0("<span style='display:inline-block; width:12px; ",
                        "height:12px; border-radius:50%; background-color:",
-                       Color, ";'></span>"),
+                       htmlEscape(Color, attribute = TRUE), ";'></span>"),
           Activity = Text
         ) |>
         select(Start, Dot, Activity, StartMillis, EndMillis) |>
         datatable(
-          escape = FALSE,
+          # Only the Dot column holds real HTML (the color swatch); the rest
+          # comes from the uploaded calendar file and must stay escaped.
+          # Column order: Start, Dot, Activity, StartMillis, EndMillis.
+          escape = c(TRUE, FALSE, TRUE, TRUE, TRUE),
           rownames = FALSE,
           selection = "none",
           colnames = c("Start date", "Color", "Activity", "", ""),
