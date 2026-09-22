@@ -4,8 +4,9 @@ box::use(
   glue[glue],
   lubridate[year, month, day, hour, minute, second],
   readxl[read_excel],
-  shiny[div, tags],
+  shiny[div, getDefaultReactiveDomain, tags],
   shinyjs[addCssClass, hide, show, removeCssClass],
+  shinytoastr[toastr_warning],
   stringr[str_to_title],
   tibble[as_tibble, tribble],
   tools[file_ext],
@@ -90,7 +91,9 @@ data_datetime_range <- function(data){
 #'
 #' @details
 #' The data is returned unfiltered when there is nothing to filter on: no
-#' (complete) range, no data, or a `column` that is missing from `data`.
+#' (complete) range, no data, or a `column` that is missing from `data`. The
+#' reason is written to the log, and the last two are also shown in the
+#' dashboard, as they point at a problem, while a missing range does not.
 #' Timestamps are converted to dates in the system time zone, and rows whose
 #' `column` is NA are dropped whenever filtering does take place.
 #'
@@ -106,8 +109,24 @@ data_datetime_range <- function(data){
 #'
 #' @noRd
 filter_dates <- function(data, range, column = "DateTime"){
-
   if (is.null(data) || is.null(range) || !column %in% names(data)) {
+    reason <- if (is.null(data)) {
+      "there is no data"
+    } else if (is.null(range)) {
+      "there is no date range"
+    } else {
+      glue("column '{column}' is missing from the data")
+    }
+
+    message(glue("filter_dates: {reason}, returning the data unfiltered."))
+
+    # Not for a missing range: that is a normal state - no selection yet, or a
+    # date field that is being typed in. Only inside a Shiny session, as toastr
+    # needs one.
+    if (!is.null(range) && !is.null(getDefaultReactiveDomain())) {
+      toastr_warning(glue("Could not filter on date."))
+    }
+
     return(data)
   }
 
