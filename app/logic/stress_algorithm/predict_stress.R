@@ -126,21 +126,20 @@ combine_predictions <- function(predicted_data, types = c("TEMP", "MOVE", "EDA",
 #'
 #' @noRd
 weighted_stress_score <- function(df_predictions) {
-  weights <- stress_weights
-  types <- intersect(names(weights), names(df_predictions))
+  types <- intersect(names(stress_weights), names(df_predictions))
 
   if (length(types) == 0) {
     return(rep(NA_real_, nrow(df_predictions)))
   }
 
   values <- as.matrix(df_predictions[, types, drop = FALSE])
-  w <- weights[types]
+  type_weights <- stress_weights[types]
 
   has_value <- !is.na(values)
   values[!has_value] <- 0
 
-  total <- as.vector(values %*% w)
-  denominator <- as.vector(has_value %*% w)
+  total <- as.vector(values %*% type_weights)
+  denominator <- as.vector(has_value %*% type_weights)
 
   ifelse(denominator > 0, total / denominator, NA_real_)
 
