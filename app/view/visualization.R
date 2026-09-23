@@ -598,13 +598,20 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
       })
 
       ## Predicted stress level ----------------------
+      # The predictions the overview is based on: only the selected date range,
+      # so the plot and the note underneath it describe the same measurements.
+      overview_stress_predictions <- reactive({
+        predictions <- stress_predictions()
+        req(predictions)
+
+        # Filter on start and end date.
+        functions$filter_dates(predictions, overview_date_range())
+      })
+
       # One line with the overall stress level: the weighted average over the
       # per parameter predictions of the stress algorithm.
       output$predicted_stress_level_plot <- renderEcharts4r({
-        plot_data <- stress_predictions()
-        req(plot_data)
-
-        plot_data <- functions$filter_dates(plot_data, overview_date_range())
+        plot_data <- overview_stress_predictions()
         req(nrow(plot_data) > 0)
 
         # Only annotate the events within the selected range, events outside of
@@ -749,10 +756,11 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
 
       # Which parameters actually contributed. With the weights renormalised
       # per row, a device that misses a signal still gets a score, so name the
-      # parameters it is based on.
+      # parameters it is based on. Judged on the same filtered predictions as
+      # the plot: a parameter that is only measured outside the selected date
+      # range does not contribute to the line that is shown.
       output$predicted_stress_level_notes <- renderUI({
-        predictions <- stress_predictions()
-        req(predictions)
+        predictions <- overview_stress_predictions()
 
         weights <- predict_stress$stress_weights
 
