@@ -964,10 +964,15 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
           mutate(date = as.character(date)) |>
           e_charts(date) |>
           e_bar(activity_time,
-                name = "Activity") |>
+                name = "Activity",
+                color = constants$app_config$visualisation$target_behaviour$bar_color) |>
           e_data(week_data) |>
           e_line(weekly_activity_time,
-                 name = "Weekly avg") |>
+                 name = "Weekly avg",
+                 color = constants$app_config$visualisation$target_behaviour$line_color,
+                 lineStyle = list(
+                   width = 3
+                 )) |>
           e_y_axis(name = "Hours",
                    nameGap = 0,
                    nameLocation = "end",
@@ -999,7 +1004,10 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
           arrange(desc(date)) |>
           mutate(date = as.character(date)) |>
           e_charts(date) |>
-          e_line(score) |>
+          e_line(score,
+                 lineStyle = list(
+                   width = 3
+                 )) |>
           e_y_axis(
             name = "Score",
             nameGap = 0,
@@ -1064,10 +1072,15 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
           mutate(date = as.character(date)) |>
           e_charts(date) |>
           e_bar(SLEEP,
-                name = "Hours of sleep") |>
+                name = "Hours of sleep",
+                color = constants$app_config$visualisation$target_behaviour$bar_color) |>
           e_data(week_data_sleep) |>
           e_line(weekly_sleep,
-                 name = "Weekly avg") |>
+                 name = "Weekly avg",
+                 color = constants$app_config$visualisation$target_behaviour$line_color,
+                 lineStyle = list(
+                   width = 3
+                 )) |>
           e_y_axis(name = "Hours",
                    nameGap = 0,
                    nameLocation = "end",
