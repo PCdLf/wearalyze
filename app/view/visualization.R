@@ -10,6 +10,7 @@ box::use(
             e_legend, e_line, e_mark_area, e_mark_line, e_visual_map,
             e_x_axis, e_y_axis, e_title, e_tooltip,
             echarts4rOutput, renderEcharts4r],
+  glue[glue],
   htmltools[htmlEscape],
   htmlwidgets[JS, onRender],
   lubridate[ymd_hms],
@@ -497,13 +498,31 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
             types = c("TEMP", "MOVE", "EDA", "HR")
           )
 
-          toastr_success("Got predictions!")
-          toastr_info("Rendering graphs...")
+          predictions <- predict_stress$combine_predictions(predicted_data)
 
-          predict_stress$combine_predictions(predicted_data)
+          if (is.null(predictions)) {
+            available_data <- paste(names(data), collapse = ", ")
+
+            message(glue(
+              "stress_predictions: no predictions for {device} ({r$type}), ",
+              "available data: [{available_data}]."
+            ))
+            toastr_warning("Could not compute the predicted stress level")
+
+            NULL
+          } else {
+            toastr_success("Got predictions!")
+            toastr_info("Rendering graphs...")
+
+            predictions
+          }
 
         }, error = function(e) {
+          message(glue(
+            "stress_predictions: failed for {device} ({r$type}): {conditionMessage(e)}"
+          ))
           toastr_warning("Could not compute the predicted stress level")
+
           NULL
         })
 
