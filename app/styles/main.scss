@@ -79,6 +79,12 @@ img.grayscale:hover {
   -webkit-filter: grayscale(0%);
 }
 
+/* The calendar event that the overview plot is being hovered on. Overrules the
+   striping and the hover styling of the table, hence the !important. */
+table.dataTable tbody tr.activity-hovered > td {
+  background-color: #dee2e6 !important;
+}
+
 .text-disclaimer {
   background-color: #fff3cd;
     border: 1px solid #ffeeba;

@@ -8,6 +8,9 @@ visualisation:
   temp:
     yrange: [24, 38]
     color: "#458B00"
+  predicted_stress:
+    yrange: [0, 10]
+    color: "#CD2626"
   move:
     e4:
       raw:
