@@ -4,8 +4,9 @@ box::use(
   glue[glue],
   lubridate[year, month, day, hour, minute, second],
   readxl[read_excel],
-  shiny[div, tags],
+  shiny[div, getDefaultReactiveDomain, tags],
   shinyjs[addCssClass, hide, show, removeCssClass],
+  shinytoastr[toastr_warning],
   stringr[str_to_title],
   tibble[as_tibble, tribble],
   tools[file_ext],
@@ -80,6 +81,58 @@ data_datetime_range <- function(data){
 
   as.numeric(difftime(r[2],r[1], units = "hours"))
 
+}
+
+#' filter_dates
+#'
+#' @description
+#' Keeps the rows of a data frame whose date in `column` falls within the given
+#' date range.
+#'
+#' @details
+#' The data is returned unfiltered when there is nothing to filter on: no
+#' (complete) range, no data, or a `column` that is missing from `data`. The
+#' reason is written to the log, and the last two are also shown in the
+#' dashboard, as they point at a problem, while a missing range does not.
+#' Timestamps are converted to dates in the system time zone, and rows whose
+#' `column` is NA are dropped whenever filtering does take place.
+#'
+#' @param data A data frame to filter on date, or NULL.
+#' @param range A vector of two dates, the start and the end of the range, both
+#'   inclusive, or NULL.
+#' @param column The name of the column holding the date or timestamp to filter
+#'   on, for example "DateTime" for measurements and "Start" for calendar
+#'   events.
+#'
+#' @return `data` with only the rows inside `range`, or `data` unchanged when no
+#'   filtering is possible.
+#'
+#' @noRd
+filter_dates <- function(data, range, column = "DateTime"){
+  if (is.null(data) || is.null(range) || !column %in% names(data)) {
+    reason <- if (is.null(data)) {
+      "there is no data"
+    } else if (is.null(range)) {
+      "there is no date range"
+    } else {
+      glue("column '{column}' is missing from the data")
+    }
+
+    message(glue("filter_dates: {reason}, returning the data unfiltered."))
+
+    # Not for a missing range: that is a normal state - no selection yet, or a
+    # date field that is being typed in. Only inside a Shiny session, as toastr
+    # needs one.
+    if (!is.null(range) && !is.null(getDefaultReactiveDomain())) {
+      toastr_warning(glue("Could not filter on date."))
+    }
+
+    return(data)
+  }
+
+  dates <- as.Date(data[[column]], tz = Sys.timezone())
+
+  data[!is.na(dates) & dates >= range[1] & dates <= range[2], , drop = FALSE]
 }
 
 rectify_datetime <- function(date, time){

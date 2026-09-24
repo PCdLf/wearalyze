@@ -31,6 +31,15 @@ yearMonthDate <- JS('function (value) {
         return datestring
       }')
 
+#' Extra styling for echarts tooltips
+#' By default echarts keeps the tooltip content on a single line, so a long
+#' calendar event description runs off the tooltip. Wrap it instead.
+tooltip_css <- paste(
+  "max-width: 350px;",
+  "white-space: normal !important;",
+  "word-break: break-word;"
+)
+
 #' Stress algorith models
 #' These are the models that are used to predict stress
 models <- helpers$load_models()
