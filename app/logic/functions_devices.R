@@ -199,7 +199,13 @@ timeseries_plot <- function(data,
   )
 }
 
-create_echarts4r_events <- function(chart, annotatedata, yrange, label = TRUE) {
+create_echarts4r_events <- function(chart, annotatedata, yrange, label = TRUE,
+                                    arrow = TRUE, color_lines = FALSE) {
+
+  # Echarts draws a circle and an arrow head on the ends of a mark line by
+  # default. Only the first e_mark_line() call sets options on the mark line
+  # itself, later calls just add data to it, so this covers every event.
+  symbol <- if (arrow) list("circle", "arrow") else list("none", "none")
 
   # Create events from calendar data
   if (!is.null(annotatedata)) {
@@ -212,31 +218,48 @@ create_echarts4r_events <- function(chart, annotatedata, yrange, label = TRUE) {
         title <- ""
       }
 
+      line <- list(
+        xAxis = annotatedata$Start[i],
+        label = list(
+          formatter = title,
+          position = 'insideMiddleTop'
+        ),
+        tooltip = list(
+          formatter = annotatedata$Text[i],
+          extraCssText = constants$tooltip_css
+        )
+      )
+
+      # Give the dashed line the colour of the event itself instead of the
+      # colour of the series it is drawn on, so it matches the shaded area of
+      # an event that has an end time. Only the colour is set, the echarts
+      # default dash pattern stays.
+      if (color_lines) {
+        line$lineStyle <- list(color = annotatedata$Color[i])
+      }
+
       chart <- chart |>
-        e_mark_line(data = list(xAxis = annotatedata$Start[i],
-                                label = list(
-                                  formatter = title,
-                                  position = 'insideMiddleTop'
-                                ),
-                                tooltip = list(
-                                  formatter = annotatedata$Text[i]
-                                )
-                                )
+        e_mark_line(
+          symbol = symbol,
+          data = line
         )
 
       if(!is.na(annotatedata$End[i])) {
         chart <- chart |>
           e_mark_area(
             data = list(
-              list(xAxis = annotatedata$Start[i],
-                   yAxis = yrange[1],
-                   itemStyle = list(color = annotatedata$Color[i]),
-                   tooltip = list(
-                     formatter = annotatedata$Text[i]
-                   )
+              list(
+                xAxis = annotatedata$Start[i],
+                yAxis = yrange[1],
+                itemStyle = list(color = annotatedata$Color[i]),
+                tooltip = list(
+                  formatter = annotatedata$Text[i],
+                  extraCssText = constants$tooltip_css
+                )
               ),
-              list(xAxis = annotatedata$End[i],
-                   yAxis = yrange[2]
+              list(
+                xAxis = annotatedata$End[i],
+                yAxis = yrange[2]
               )
             )
           )
