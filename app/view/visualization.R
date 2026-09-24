@@ -6,15 +6,14 @@ box::use(
         ungroup],
   dygraphs[dygraphOutput, renderDygraph],
   echarts4r[e_bar, e_charts, e_connect_group, e_data, e_datazoom,
-            e_flip_coords, e_grid, e_group, e_heatmap,
-            e_legend, e_line, e_mark_area, e_mark_line, e_visual_map,
+            e_flip_coords, e_grid, e_group,
+            e_legend, e_line, e_mark_area, e_mark_line,
             e_x_axis, e_y_axis, e_title, e_tooltip,
             echarts4rOutput, renderEcharts4r],
   glue[glue],
   htmltools[htmlEscape],
   htmlwidgets[JS, onRender],
   lubridate[ymd_hms],
-  scales[rescale],
   shiny[actionButton, bindEvent, br, checkboxInput, column, dateRangeInput, div,
         fluidRow, hr,
         icon, isTruthy, moduleServer, NS, observe, radioButtons,
@@ -1073,13 +1072,10 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
       if ("STRESS" %in% names(data$data) && "SLEEP" %in% names(data$data)) {
         tagList(
           fluidRow(
-            column(4,
-                   echarts4rOutput(ns("echarts_problemtarget_act_level")),
-            ),
-            column(4,
+            column(6,
                    echarts4rOutput(ns("echarts_problemtarget_act_time"))
             ),
-            column(4,
+            column(6,
                    echarts4rOutput(ns("echarts_problemtarget_stress"))
             )
           ),
@@ -1094,43 +1090,34 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
         )
       } else if ("STRESS" %in% names(data$data)) {
         fluidRow(
-          column(3,
-                 echarts4rOutput(ns("echarts_problemtarget_act_level")),
-          ),
-          column(3,
+          column(4,
                  echarts4rOutput(ns("echarts_problemtarget_act_time"))
           ),
-          column(3,
+          column(4,
                  echarts4rOutput(ns("echarts_problemtarget_stress"))
           ),
-          column(3,
+          column(4,
                  echarts4rOutput(ns("echarts_problemtarget_behaviour"))
           )
         )
       } else if ("SLEEP" %in% names(data$data)) {
         fluidRow(
-          column(3,
-                 echarts4rOutput(ns("echarts_problemtarget_act_level")),
-          ),
-          column(3,
+          column(4,
                  echarts4rOutput(ns("echarts_problemtarget_act_time"))
           ),
-          column(3,
+          column(4,
                  echarts4rOutput(ns("echarts_problemtarget_sleep"))
           ),
-          column(3,
+          column(4,
                  echarts4rOutput(ns("echarts_problemtarget_behaviour"))
           )
         )
       } else {
         fluidRow(
-          column(4,
-                 echarts4rOutput(ns("echarts_problemtarget_act_level")),
-          ),
-          column(4,
+          column(6,
                  echarts4rOutput(ns("echarts_problemtarget_act_time"))
           ),
-          column(4,
+          column(6,
                  echarts4rOutput(ns("echarts_problemtarget_behaviour"))
           )
         )
@@ -1163,15 +1150,10 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
         mutate(active = ifelse(!is.na(activity_counts) & activity_counts > 0, 1, 0)) |>
         group_by(DateTime = lubridate::floor_date(DateTime, "1 hour")) |>
         summarise(
-          activity_level = sum(activity_counts, na.rm = TRUE),
           activity_time = sum(active, na.rm = TRUE),
           .groups = "drop"
         ) |>
-        mutate(hour = as.numeric(format(DateTime, "%H")),
-               hour = ifelse(hour < 12, paste0(hour, "am"), paste0(hour, "pm")),
-               date = as.Date(DateTime)) |>
-        # scale activity level as number between 0 and 10
-        mutate(activity_level = round(scales::rescale(activity_level, to = c(0, 10)))) |>
+        mutate(date = as.Date(DateTime)) |>
         # merge problemtarget() data based on Date
         left_join(problemtarget(), by = join_by(date == Date)) |>
         arrange(desc(DateTime))
@@ -1254,17 +1236,6 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
         }
       }
 
-      output$echarts_problemtarget_act_level <- renderEcharts4r({
-        df_activity |>
-          e_charts(hour) |>
-          e_heatmap(date, activity_level, label = list(show = TRUE)) |>
-          e_y_axis(name = "Date") |>
-          e_title("Activity Level") |>
-          e_visual_map(activity_level,
-                       orient = "horizontal") |>
-          e_grid(left = 70)
-      })
-
       output$echarts_problemtarget_act_time <- renderEcharts4r({
         df_activity |>
           group_by(date) |>
@@ -1274,10 +1245,15 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
           mutate(date = as.character(date)) |>
           e_charts(date) |>
           e_bar(activity_time,
-                name = "Activity") |>
+                name = "Activity",
+                color = constants$app_config$visualisation$target_behaviour$bar_color) |>
           e_data(week_data) |>
           e_line(weekly_activity_time,
-                 name = "Weekly avg") |>
+                 name = "Weekly avg",
+                 color = constants$app_config$visualisation$target_behaviour$line_color,
+                 lineStyle = list(
+                   width = 3
+                 )) |>
           e_y_axis(name = "Hours",
                    nameGap = 0,
                    nameLocation = "end",
@@ -1309,7 +1285,10 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
           arrange(desc(date)) |>
           mutate(date = as.character(date)) |>
           e_charts(date) |>
-          e_line(score) |>
+          e_line(score,
+                 lineStyle = list(
+                   width = 3
+                 )) |>
           e_y_axis(
             name = "Score",
             nameGap = 0,
@@ -1374,10 +1353,15 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
           mutate(date = as.character(date)) |>
           e_charts(date) |>
           e_bar(SLEEP,
-                name = "Hours of sleep") |>
+                name = "Hours of sleep",
+                color = constants$app_config$visualisation$target_behaviour$bar_color) |>
           e_data(week_data_sleep) |>
           e_line(weekly_sleep,
-                 name = "Weekly avg") |>
+                 name = "Weekly avg",
+                 color = constants$app_config$visualisation$target_behaviour$line_color,
+                 lineStyle = list(
+                   width = 3
+                 )) |>
           e_y_axis(name = "Hours",
                    nameGap = 0,
                    nameLocation = "end",

@@ -31,4 +31,7 @@ visualisation:
         yrange: [30, 40000]
         color: "#68228B"
         custom_y: 10000
+  target_behaviour:
+    bar_color: "#FFA500"
+    line_color: "#008300"
   default_color: "blue"
