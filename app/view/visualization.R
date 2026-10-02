@@ -2,23 +2,26 @@
 box::use(
   bslib[navset_tab, nav_panel, nav_select, card, card_header],
   DT[datatable, DTOutput, renderDT],
-  dplyr[arrange, filter, group_by, join_by, left_join, mutate, summarise, ungroup],
+  dplyr[arrange, filter, group_by, join_by, left_join, mutate, select, summarise,
+        ungroup],
   dygraphs[dygraphOutput, renderDygraph],
   echarts4r[e_bar, e_charts, e_connect_group, e_data, e_datazoom,
-            e_flip_coords, e_grid, e_group, e_heatmap,
-            e_legend, e_line, e_mark_area, e_mark_line, e_visual_map,
+            e_flip_coords, e_grid, e_group,
+            e_legend, e_line, e_mark_area, e_mark_line,
             e_x_axis, e_y_axis, e_title, e_tooltip,
             echarts4rOutput, renderEcharts4r],
-  htmlwidgets[onRender],
+  glue[glue],
+  htmltools[htmlEscape],
+  htmlwidgets[JS, onRender],
   lubridate[ymd_hms],
-  scales[rescale],
-  shiny[actionButton, bindEvent, br, checkboxInput, column, div, fluidRow, hr,
+  shiny[actionButton, bindEvent, br, checkboxInput, column, dateRangeInput, div,
+        fluidRow, hr,
         icon, isTruthy, moduleServer, NS, observe, radioButtons,
         reactive, reactiveVal, renderUI, req, tagList, tags, textInput, uiOutput,
         updateActionButton, p, tagAppendAttributes],
   shinycssloaders[withSpinner],
   shinyjs[hide, show],
-  shinytoastr[toastr_info, toastr_success],
+  shinytoastr[toastr_info, toastr_success, toastr_warning],
   shinyWidgets[pickerInput, updatePickerInput],
   stats[runif],
   tidyr[complete]
@@ -111,25 +114,53 @@ ui <- function(id) {
 
       # Daily graphs ---------------------------------
       nav_panel(
-        title = "Daily",
+        title = "Overview",
         icon = icon("chart-bar"),
         value = ns("plottab"),
+        # The echarts grid is inset by 10% on both sides (the echarts default,
+        # e_grid() for this plot only sets top and bottom), so inset everything
+        # around the plot by the same amount to line it up with the plot.
+        div(
+          style = "padding: 15px 10% 0 10%;",
+          uiOutput(ns("ui_overview_date_range")),
+          tags$h5("Predicted stress level", style = "margin-bottom: 0;")
+        ),
+        withSpinner(
+          echarts4rOutput(ns("predicted_stress_level_plot"), height = "400px")
+        ),
+        div(
+          style = "padding-left: 10%; padding-right: 10%;",
+          uiOutput(ns("predicted_stress_level_notes")),
+          uiOutput(ns("ui_calendar_overview"))
+        )
+      ),
+
+      # Parameters -----------------------------------
+      nav_panel(
+        title = "Parameters",
+        icon = icon("wave-square"),
+        value = ns("parameters_tab"),
         fluidRow(
-          column(3,
-                 offset = 1,
-                 pickerInput(ns("date_picker"),
-                             label = "Select day",
-                             choices = "All",
-                             selected = "All",
-                             width = "100%")
+          column(
+            width = 3,
+            offset = 1,
+            pickerInput(
+              ns("date_picker"),
+              label = "Select day",
+              choices = "All",
+              selected = "All",
+              width = "100%"
+            )
           ),
           column(
-            1,
+            width = 1,
             tagAppendAttributes(
               style = "margin-top:30px",
-              actionButton(ns("btn_update_dates"),
-                           "",
-                           icon = icon("sync"))
+              actionButton(
+                ns("btn_update_dates"),
+                "",
+                icon = icon("sync")
+              )
             )
           )
         ),
@@ -140,20 +171,20 @@ ui <- function(id) {
         ),
         withSpinner(
           id = ns("daily_graphs1_spinner"),
-          echarts4rOutput(ns("daily_graphs1"), height = "220px"),
+          echarts4rOutput(ns("daily_graphs1"), height = "220px")
         ),
         # Add spinner, but don't show, this gives a better loading UX
         withSpinner(
           type = 0,
-          echarts4rOutput(ns("daily_graphs2"), height = "220px"),
+          echarts4rOutput(ns("daily_graphs2"), height = "220px")
         ),
         withSpinner(
           type = 0,
-          echarts4rOutput(ns("daily_graphs3"), height = "220px"),
+          echarts4rOutput(ns("daily_graphs3"), height = "220px")
         ),
         withSpinner(
           type = 0,
-          echarts4rOutput(ns("daily_graphs4"), height = "220px"),
+          echarts4rOutput(ns("daily_graphs4"), height = "220px")
         ),
         uiOutput(ns("echarts_notes"))
       ),
@@ -202,6 +233,7 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
     # Functionality ---------------------------------
     ## Init -----------------------------------------
     functions$hide_tab(ns("plottab"))
+    functions$hide_tab(ns("parameters_tab"))
     functions$hide_tab(ns("plottab2"))
     functions$hide_tab(ns("plotannotations"))
 
@@ -234,6 +266,41 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
     observe({
       req(input$date_picker)
       r$chosen_dates <- input$date_picker
+    })
+
+    ## Overview date filter -------------------------
+    # Start and end date above the overview plot. Filters both the plot and the
+    # calendar table below it. Rendered from the data, so the bounds and the
+    # initial selection always cover the full measurement period.
+    output$ui_overview_date_range <- renderUI({
+      req(data()$data)
+
+      datetimes <- data()$data[[1]]$DateTime
+      req(datetimes)
+
+      dates <- as.Date(range(datetimes, na.rm = TRUE), tz = Sys.timezone())
+
+      dateRangeInput(
+        ns("overview_date_range"),
+        label = "Filter on date",
+        start = dates[1],
+        end = dates[2],
+        min = dates[1],
+        max = dates[2],
+        format = "yyyy-mm-dd",
+        separator = " to "
+      )
+    })
+
+    overview_date_range <- reactive({
+      selected <- input$overview_date_range
+
+      # No selection (yet), or a half filled in range: don't filter.
+      if (!isTruthy(selected) || any(is.na(selected))) {
+        return(NULL)
+      }
+
+      as.Date(selected)
     })
 
     ## Settings -------------------------------------
@@ -339,13 +406,16 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
       }
 
       functions$show_tab(ns("plottab"))
+      functions$show_tab(ns("parameters_tab"))
 
       if (isTruthy(calendar())) {
         functions$show_tab(ns("plotannotations"))
       }
 
-      nav_select(id = "tabs",
-                 selected = ns("plottab"))
+      nav_select(
+        id = "tabs",
+        selected = ns("plottab")
+      )
 
       if(input$check_add_calendar_annotation){
         annotatedata <- calendar()
@@ -415,104 +485,314 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
       # create empty list for plots
       plot_list <- list()
 
-      output$stress_algorithm_plot <- renderEcharts4r({
+      ## Stress predictions --------------------------
+      stress_predictions <- reactive({
 
-        req(data())
-
-        if (input$incl_stress_algorithm) {
+        tryCatch({
 
           toastr_info("Applying stress algorithm 🚀")
 
-          predicted_data <- predict_stress$return_predictions(data, types = c("TEMP", "MOVE", "EDA", "HR"))
-
-          toastr_success("Got predictions!")
-          toastr_info("Rendering graphs...")
-
-          # combine into one dataframe, with DateTime as index
-          # only join datasets if they are available (not NULL)
-          plot_data <- data.frame(DateTime = predicted_data$TEMP$DateTime)
-          for (type in c("TEMP", "MOVE", "EDA", "HR")) {
-            if (!is.null(predicted_data[[type]])) {
-              plot_data <- plot_data |> left_join(predicted_data[[type]], by = "DateTime")
-            } else {
-              plot_data[[type]] <- NA
-            }
-          }
-
-          chart <- plot_data |>
-            e_charts(DateTime) |>
-            e_line(TEMP,
-                   name = "TEMP",
-                   symbolSize = "0.01",
-                   color = constants$app_config$visualisation$temp$color,
-                   lineStyle = list(
-                     width = 1
-                   )) |>
-            e_line(MOVE,
-                   name = "MOVE",
-                   symbolSize = "0.01",
-                   color = constants$app_config$visualisation$move[[device]][[r$type]]$color,
-                   lineStyle = list(
-                     width = 1
-                   )) |>
-            e_line(EDA,
-                   name = "EDA",
-                   symbolSize = "0.01",
-                   color = constants$app_config$visualisation$eda$color,
-                   lineStyle = list(
-                     width = 1
-                   )) |>
-            e_line(HR,
-                   name = "HR",
-                   symbolSize = "0.01",
-                   color = constants$app_config$visualisation$hr$color,
-                   lineStyle = list(
-                     width = 1
-                   )) |>
-            e_title(
-              input$txt_plot_main_title,
-              left = "50%",
-              top = 0
-            ) |>
-            e_x_axis(
-              axisPointer = list(show = TRUE),
-              axisLabel = list(
-                formatter = constants$yearMonthDate
-              )
-            ) |>
-            e_y_axis(
-              name = "Predicted Stress Level",
-              nameLocation = "center",
-              nameRotate = 90,
-              nameGap = 30,
-              min = 0,
-              max = 10
-            ) |>
-            e_datazoom(show = FALSE) |>
-            e_tooltip(trigger = "item") |>
-            e_legend(
-              show = TRUE,
-              top = 30
-            ) |>
-            e_group("daily") |>
-            e_grid(
-              top = 60,
-              bottom = 20
-            )
-
-          chart <- functions_devices$create_echarts4r_events(
-            chart,
-            annotatedata,
-            yrange = c(0, 10),
-            label = input$show_calendar_event_labels
+          predicted_data <- predict_stress$return_predictions(
+            data,
+            types = c("TEMP", "MOVE", "EDA", "HR")
           )
 
-          chart
+          predictions <- predict_stress$combine_predictions(predicted_data)
 
-        } else {
+          if (is.null(predictions)) {
+            available_data <- paste(names(data), collapse = ", ")
+
+            message(glue(
+              "stress_predictions: no predictions for {device} ({r$type}), ",
+              "available data: [{available_data}]."
+            ))
+            toastr_warning("Could not compute the predicted stress level")
+
+            NULL
+          } else {
+            toastr_success("Got predictions!")
+            toastr_info("Rendering graphs...")
+
+            predictions
+          }
+
+        }, error = function(e) {
+          message(glue(
+            "stress_predictions: failed for {device} ({r$type}): {conditionMessage(e)}"
+          ))
+          toastr_warning("Could not compute the predicted stress level")
+
           NULL
+        })
+
+      })
+
+      # One line per parameter (TEMP, MOVE, EDA, HR) with the stress level that
+      # the model predicts for that parameter on its own.
+      output$stress_algorithm_plot <- renderEcharts4r({
+        # Guard before stress_predictions(), so the models are not run when the
+        # stress algorithm is switched off.
+        req(input$incl_stress_algorithm)
+
+        predictions <- stress_predictions()
+        req(predictions)
+
+        chart <- predictions |>
+          e_charts(DateTime) |>
+          e_line(
+            TEMP,
+            name = "TEMP",
+            symbolSize = "0.01",
+            color = constants$app_config$visualisation$temp$color,
+            lineStyle = list(
+              width = 1
+            )
+          ) |>
+          e_line(
+            MOVE,
+            name = "MOVE",
+            symbolSize = "0.01",
+            color = constants$app_config$visualisation$move[[device]][[r$type]]$color,
+            lineStyle = list(
+              width = 1
+            )
+          ) |>
+          e_line(
+            EDA,
+            name = "EDA",
+            symbolSize = "0.01",
+            color = constants$app_config$visualisation$eda$color,
+            lineStyle = list(
+              width = 1
+            )
+          ) |>
+          e_line(
+            HR,
+            name = "HR",
+            symbolSize = "0.01",
+            color = constants$app_config$visualisation$hr$color,
+            lineStyle = list(
+              width = 1
+            )
+          ) |>
+          e_title(
+            input$txt_plot_main_title,
+            left = "50%",
+            top = 0
+          ) |>
+          e_x_axis(
+            axisPointer = list(show = TRUE),
+            axisLabel = list(
+              formatter = constants$yearMonthDate
+            )
+          ) |>
+          e_y_axis(
+            name = "Predicted Stress Level",
+            nameLocation = "center",
+            nameRotate = 90,
+            nameGap = 30,
+            min = 0,
+            max = 10
+          ) |>
+          e_datazoom(show = FALSE) |>
+          e_tooltip(trigger = "item", extraCssText = constants$tooltip_css) |>
+          e_legend(
+            show = TRUE,
+            top = 30
+          ) |>
+          e_group("daily") |>
+          e_grid(
+            top = 60,
+            bottom = 20
+          )
+
+        functions_devices$create_echarts4r_events(
+          chart,
+          annotatedata,
+          yrange = c(0, 10),
+          label = input$show_calendar_event_labels
+        )
+
+      })
+
+      ## Predicted stress level ----------------------
+      # The predictions the overview is based on: only the selected date range,
+      # so the plot and the note underneath it describe the same measurements.
+      overview_stress_predictions <- reactive({
+        predictions <- stress_predictions()
+        req(predictions)
+
+        # Filter on start and end date.
+        functions$filter_dates(predictions, overview_date_range())
+      })
+
+      # One line with the overall stress level: the weighted average over the
+      # per parameter predictions of the stress algorithm.
+      output$predicted_stress_level_plot <- renderEcharts4r({
+        plot_data <- overview_stress_predictions()
+        req(nrow(plot_data) > 0)
+
+        # Only annotate the events within the selected range, events outside of
+        # it would stretch the x axis beyond the filtered data.
+        overview_annotations <- functions$filter_dates(annotatedata, overview_date_range(), "Start")
+        if (!is.null(overview_annotations) && nrow(overview_annotations) == 0) {
+          overview_annotations <- NULL
         }
 
+        plot_data$predicted_stress <- predict_stress$weighted_stress_score(plot_data)
+
+        yrange <- as.numeric(constants$app_config$visualisation$predicted_stress$yrange)
+
+        # Only keep room above the plotting area for the title when a title was
+        # filled in, otherwise it is a gap between the heading and the plot.
+        grid_top <- if (isTruthy(input$txt_plot_main_title)) 40 else 10
+
+        chart <- plot_data |>
+          e_charts(DateTime) |>
+          e_line(
+            predicted_stress,
+            name = "Predicted stress level",
+            symbolSize = "0.01",
+            color = constants$app_config$visualisation$predicted_stress$color,
+            lineStyle = list(
+              width = 1
+            )
+          ) |>
+          e_title(
+            input$txt_plot_main_title,
+            left = "50%",
+            top = 0
+          ) |>
+          e_x_axis(
+            axisPointer = list(show = TRUE),
+            axisLabel = list(
+              formatter = constants$yearMonthDate
+            )
+          ) |>
+          e_y_axis(
+            name = "Predicted stress level",
+            nameLocation = "center",
+            nameRotate = 90,
+            nameGap = 30,
+            min = yrange[1],
+            max = yrange[2]
+          ) |>
+          e_tooltip(trigger = "item", extraCssText = constants$tooltip_css) |>
+          e_legend(show = FALSE) |>
+          e_grid(
+            top = grid_top,
+            bottom = 30
+          )
+
+        # No labels or arrow heads on the events here: the table below the plot
+        # already names every event, and the tooltip gives the full text.
+        chart <- functions_devices$create_echarts4r_events(
+          chart,
+          overview_annotations,
+          yrange = yrange,
+          label = FALSE,
+          arrow = FALSE,
+          color_lines = TRUE
+        )
+
+        # Highlight the calendar event that is hovered on in the table below the
+        # plot.
+        chart |>
+          onRender(
+            sprintf("function(el, x) {
+              var chart = this.getChart();
+              var tableId = '%s';
+              var highlighting = false;
+
+              // Only highlight while the mouse is on the event itself. The few
+              // pixels of slack are there because an event without an end time
+              // is drawn as a line rather than as an area, and a line of a
+              // couple of pixels wide is otherwise impossible to point at.
+              var reach = 3;
+
+              function rows() {
+                var table = document.getElementById(tableId);
+                return table ? table.querySelectorAll('tbody tr') : [];
+              }
+
+              function clear() {
+                if (!highlighting) return;
+                highlighting = false;
+                rows().forEach(function(row) {
+                  row.classList.remove('activity-hovered');
+                });
+              }
+
+              // Distance in pixels between the mouse and the band the event is
+              // drawn as, 0 when the mouse is on the event itself. Events
+              // without an end time are a single moment in the plot.
+              function distance(row, atX) {
+                var start = parseFloat(row.getAttribute('data-start'));
+                var end = parseFloat(row.getAttribute('data-end'));
+                if (isNaN(start)) return Infinity;
+                if (isNaN(end)) end = start;
+
+                var from = chart.convertToPixel({xAxisIndex: 0}, start);
+                var to = chart.convertToPixel({xAxisIndex: 0}, end);
+
+                return Math.max(from - atX, atX - to, 0);
+              }
+
+              chart.getZr().on('mousemove', function(e) {
+                if (!chart.containPixel('grid', [e.offsetX, e.offsetY])) {
+                  clear();
+                  return;
+                }
+
+                var all = rows();
+                var distances = [];
+                var nearest = Infinity;
+
+                all.forEach(function(row) {
+                  var d = distance(row, e.offsetX);
+                  distances.push(d);
+                  nearest = Math.min(nearest, d);
+                });
+
+                if (nearest > reach) {
+                  clear();
+                  return;
+                }
+
+                // Events that overlap are equally near, highlight them together.
+                highlighting = true;
+                all.forEach(function(row, i) {
+                  row.classList.toggle('activity-hovered', distances[i] === nearest);
+                });
+              });
+
+              chart.getZr().on('globalout', clear);
+            }", ns("dt_calendar_overview"))
+          )
+
+      })
+
+      # Which parameters actually contributed. With the weights renormalised
+      # per row, a device that misses a signal still gets a score, so name the
+      # parameters it is based on. Judged on the same filtered predictions as
+      # the plot: a parameter that is only measured outside the selected date
+      # range does not contribute to the line that is shown.
+      output$predicted_stress_level_notes <- renderUI({
+        predictions <- overview_stress_predictions()
+
+        weights <- predict_stress$stress_weights
+
+        used <- names(weights)[vapply(names(weights), function(type) {
+          any(!is.na(predictions[[type]]))
+        }, logical(1))]
+
+        if (length(used) == 0) {
+          return(p("No parameters available to compute a predicted stress level."))
+        }
+
+        p(paste0("Weighted average of ",
+                 paste(paste0(used, " (", weights[used], ")"), collapse = ", "),
+                 ". Each parameter is predicted on a 1-7 scale."))
       })
 
       output$daily_graphs1 <- renderEcharts4r({
@@ -552,7 +832,7 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
             max = series_options()$EDA$yaxis_range[2]
           ) |>
           e_datazoom(show = FALSE) |>
-          e_tooltip(trigger = "item") |>
+          e_tooltip(trigger = "item", extraCssText = constants$tooltip_css) |>
           e_legend(show = FALSE) |>
           e_group("daily") |>
           e_connect_group("daily") |>
@@ -610,7 +890,7 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
             max = series_options()$HR$yaxis_range[2]
           ) |>
           e_datazoom(show = FALSE) |>
-          e_tooltip(trigger = "item") |>
+          e_tooltip(trigger = "item", extraCssText = constants$tooltip_css) |>
           e_legend(show = FALSE) |>
           e_group("daily") |>
           e_connect_group("daily") |>
@@ -665,7 +945,7 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
             max = series_options()$TEMP$yaxis_range[2]
           ) |>
           e_datazoom(show = FALSE) |>
-          e_tooltip(trigger = "item") |>
+          e_tooltip(trigger = "item", extraCssText = constants$tooltip_css) |>
           e_legend(show = FALSE) |>
           e_group("daily") |>
           e_connect_group("daily") |>
@@ -720,7 +1000,7 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
             max = series_options()$MOVE$yaxis_range[2]
           ) |>
           e_datazoom(type = "slider") |>
-          e_tooltip(trigger = "item") |>
+          e_tooltip(trigger = "item", extraCssText = constants$tooltip_css) |>
           e_legend(show = FALSE) |>
           e_group("daily") |>
           e_connect_group("daily") |>
@@ -792,13 +1072,10 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
       if ("STRESS" %in% names(data$data) && "SLEEP" %in% names(data$data)) {
         tagList(
           fluidRow(
-            column(4,
-                   echarts4rOutput(ns("echarts_problemtarget_act_level")),
-            ),
-            column(4,
+            column(6,
                    echarts4rOutput(ns("echarts_problemtarget_act_time"))
             ),
-            column(4,
+            column(6,
                    echarts4rOutput(ns("echarts_problemtarget_stress"))
             )
           ),
@@ -813,43 +1090,34 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
         )
       } else if ("STRESS" %in% names(data$data)) {
         fluidRow(
-          column(3,
-                 echarts4rOutput(ns("echarts_problemtarget_act_level")),
-          ),
-          column(3,
+          column(4,
                  echarts4rOutput(ns("echarts_problemtarget_act_time"))
           ),
-          column(3,
+          column(4,
                  echarts4rOutput(ns("echarts_problemtarget_stress"))
           ),
-          column(3,
+          column(4,
                  echarts4rOutput(ns("echarts_problemtarget_behaviour"))
           )
         )
       } else if ("SLEEP" %in% names(data$data)) {
         fluidRow(
-          column(3,
-                 echarts4rOutput(ns("echarts_problemtarget_act_level")),
-          ),
-          column(3,
+          column(4,
                  echarts4rOutput(ns("echarts_problemtarget_act_time"))
           ),
-          column(3,
+          column(4,
                  echarts4rOutput(ns("echarts_problemtarget_sleep"))
           ),
-          column(3,
+          column(4,
                  echarts4rOutput(ns("echarts_problemtarget_behaviour"))
           )
         )
       } else {
         fluidRow(
-          column(4,
-                 echarts4rOutput(ns("echarts_problemtarget_act_level")),
-          ),
-          column(4,
+          column(6,
                  echarts4rOutput(ns("echarts_problemtarget_act_time"))
           ),
-          column(4,
+          column(6,
                  echarts4rOutput(ns("echarts_problemtarget_behaviour"))
           )
         )
@@ -882,15 +1150,10 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
         mutate(active = ifelse(!is.na(activity_counts) & activity_counts > 0, 1, 0)) |>
         group_by(DateTime = lubridate::floor_date(DateTime, "1 hour")) |>
         summarise(
-          activity_level = sum(activity_counts, na.rm = TRUE),
           activity_time = sum(active, na.rm = TRUE),
           .groups = "drop"
         ) |>
-        mutate(hour = as.numeric(format(DateTime, "%H")),
-               hour = ifelse(hour < 12, paste0(hour, "am"), paste0(hour, "pm")),
-               date = as.Date(DateTime)) |>
-        # scale activity level as number between 0 and 10
-        mutate(activity_level = round(scales::rescale(activity_level, to = c(0, 10)))) |>
+        mutate(date = as.Date(DateTime)) |>
         # merge problemtarget() data based on Date
         left_join(problemtarget(), by = join_by(date == Date)) |>
         arrange(desc(DateTime))
@@ -973,17 +1236,6 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
         }
       }
 
-      output$echarts_problemtarget_act_level <- renderEcharts4r({
-        df_activity |>
-          e_charts(hour) |>
-          e_heatmap(date, activity_level, label = list(show = TRUE)) |>
-          e_y_axis(name = "Date") |>
-          e_title("Activity Level") |>
-          e_visual_map(activity_level,
-                       orient = "horizontal") |>
-          e_grid(left = 70)
-      })
-
       output$echarts_problemtarget_act_time <- renderEcharts4r({
         df_activity |>
           group_by(date) |>
@@ -993,10 +1245,15 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
           mutate(date = as.character(date)) |>
           e_charts(date) |>
           e_bar(activity_time,
-                name = "Activity") |>
+                name = "Activity",
+                color = constants$app_config$visualisation$target_behaviour$bar_color) |>
           e_data(week_data) |>
           e_line(weekly_activity_time,
-                 name = "Weekly avg") |>
+                 name = "Weekly avg",
+                 color = constants$app_config$visualisation$target_behaviour$line_color,
+                 lineStyle = list(
+                   width = 3
+                 )) |>
           e_y_axis(name = "Hours",
                    nameGap = 0,
                    nameLocation = "end",
@@ -1028,7 +1285,10 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
           arrange(desc(date)) |>
           mutate(date = as.character(date)) |>
           e_charts(date) |>
-          e_line(score) |>
+          e_line(score,
+                 lineStyle = list(
+                   width = 3
+                 )) |>
           e_y_axis(
             name = "Score",
             nameGap = 0,
@@ -1093,10 +1353,15 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
           mutate(date = as.character(date)) |>
           e_charts(date) |>
           e_bar(SLEEP,
-                name = "Hours of sleep") |>
+                name = "Hours of sleep",
+                color = constants$app_config$visualisation$target_behaviour$bar_color) |>
           e_data(week_data_sleep) |>
           e_line(weekly_sleep,
-                 name = "Weekly avg") |>
+                 name = "Weekly avg",
+                 color = constants$app_config$visualisation$target_behaviour$line_color,
+                 lineStyle = list(
+                   width = 3
+                 )) |>
           e_y_axis(name = "Hours",
                    nameGap = 0,
                    nameLocation = "end",
@@ -1121,6 +1386,82 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
       updateActionButton(session, "btn_make_plot", label = "Update plot", icon = icon("sync"))
 
     }) |> bindEvent(input$btn_make_plot)
+
+    ## Calendar overview ---------------------------
+    # Calendar events below the overview plot, in the same colors the events
+    # are drawn with in the plot.
+    output$ui_calendar_overview <- renderUI({
+      req(calendar())
+
+      message("visualization - ui_calendar_overview")
+
+      tagList(
+        tags$hr(),
+        tags$h5("Calendar"),
+        DTOutput(ns("dt_calendar_overview"))
+      )
+    })
+
+    output$dt_calendar_overview <- renderDT({
+      req(calendar())
+
+      message("visualization - dt_calendar_overview")
+
+      calendar() |>
+        ungroup() |>
+        functions$filter_dates(overview_date_range(), "Start") |>
+        arrange(Start) |>
+        mutate(
+          # The time window of the event, in the same unit as the echarts time
+          # axis (milliseconds since epoch) so the hover handler on the overview
+          # plot can compare them directly. As text, to keep the large numbers
+          # out of scientific notation. Events without an end time stay empty.
+          StartMillis = sprintf("%.0f", as.numeric(Start) * 1000),
+          EndMillis = ifelse(is.na(End),
+                             "",
+                             sprintf("%.0f", as.numeric(End) * 1000)),
+          Start = format(Start, "%Y-%m-%d %H:%M"),
+          # Color is user-supplied (via the calendar upload), so it is HTML-
+          # escaped before being embedded in the style attribute to prevent
+          # it from breaking out of the attribute or injecting markup.
+          Dot = paste0("<span style='display:inline-block; width:12px; ",
+                       "height:12px; border-radius:50%; background-color:",
+                       htmlEscape(Color, attribute = TRUE), ";'></span>"),
+          Activity = Text
+        ) |>
+        select(Start, Dot, Activity, StartMillis, EndMillis) |>
+        datatable(
+          # Only the Dot column holds real HTML (the color swatch); the rest
+          # comes from the uploaded calendar file and must stay escaped.
+          # Column order: Start, Dot, Activity, StartMillis, EndMillis.
+          escape = c(TRUE, FALSE, TRUE, TRUE, TRUE),
+          rownames = FALSE,
+          selection = "none",
+          colnames = c("Start date", "Color", "Activity", "", ""),
+          options = list(
+            lengthChange = FALSE,
+            searching = FALSE,
+            paging = FALSE,
+            info = FALSE,
+            columnDefs = list(
+              list(targets = "Start", width = "120px"),
+              list(targets = "Dot", orderable = FALSE, width = "20px"),
+              # The time window is only there for the hover handler on the
+              # overview plot, don't show it.
+              list(targets = c("StartMillis", "EndMillis"), visible = FALSE)
+            ),
+            # Put the time window on the row itself, so the hover handler on the
+            # overview plot can find the event it is hovering on.
+            rowCallback = JS(
+              "function(row, data) {",
+              "  row.setAttribute('data-start', data[3]);",
+              "  row.setAttribute('data-end', data[4]);",
+              "}"
+            )
+          )
+        )
+
+    })
 
     ## Annotations ---------------------------------
     current_visible_annotations <- reactive({

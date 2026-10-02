@@ -8,6 +8,9 @@ visualisation:
   temp:
     yrange: [24, 38]
     color: "#458B00"
+  predicted_stress:
+    yrange: [0, 10]
+    color: "#CD2626"
   move:
     e4:
       raw:
@@ -28,4 +31,7 @@ visualisation:
         yrange: [30, 40000]
         color: "#68228B"
         custom_y: 10000
+  target_behaviour:
+    bar_color: "#FFA500"
+    line_color: "#008300"
   default_color: "blue"
