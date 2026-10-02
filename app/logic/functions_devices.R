@@ -4,6 +4,7 @@ box::use(
   dygraphs[dygraph, dyHighlight, dyOptions, dyUnzoom, dyLimit,
            dyAxis, dyEvent, dyRangeSelector, dyShading],
   echarts4r[e_mark_area, e_mark_line],
+  htmltools[htmlEscape],
   stringr[str_trunc],
   wearables[as_timeseries],
   zoo[index]
@@ -224,8 +225,10 @@ create_echarts4r_events <- function(chart, annotatedata, yrange, label = TRUE,
           formatter = title,
           position = 'insideMiddleTop'
         ),
+        # Text comes from the calendar upload and the tooltip is rendered as
+        # HTML, so escape it.
         tooltip = list(
-          formatter = annotatedata$Text[i],
+          formatter = htmlEscape(annotatedata$Text[i]),
           extraCssText = constants$tooltip_css
         )
       )
@@ -253,7 +256,8 @@ create_echarts4r_events <- function(chart, annotatedata, yrange, label = TRUE,
                 yAxis = yrange[1],
                 itemStyle = list(color = annotatedata$Color[i]),
                 tooltip = list(
-                  formatter = annotatedata$Text[i],
+                  # Escaped for the same reason as the mark line tooltip.
+                  formatter = htmlEscape(annotatedata$Text[i]),
                   extraCssText = constants$tooltip_css
                 )
               ),
