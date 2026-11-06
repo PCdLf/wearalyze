@@ -224,6 +224,10 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
     dailygraphs3 <- reactiveVal()
     dailygraphs4 <- reactiveVal()
 
+    # Data for the stress predictions (all dates). The models only run again
+    # when this data changes, not when another day is chosen in a filter.
+    prediction_data <- reactiveVal()
+
     # Modules ---------------------------------------
     helpButton$server("help", helptext = constants$help_config$visualization)
     y_eda <- visSeriesOptions$server("eda")
@@ -389,6 +393,52 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
 
 
     # Plotting -------------------------------------
+    ## Stress predictions --------------------------
+    # Predicted stress level for all dates. The overview and the parameters tab
+    # each filter these predictions on their own date selection.
+    stress_predictions <- reactive({
+      data_all_dates <- prediction_data()
+      req(data_all_dates)
+
+      tryCatch({
+
+        toastr_info("Applying stress algorithm 🚀")
+
+        predicted_data <- predict_stress$return_predictions(
+          data_all_dates,
+          types = c("TEMP", "MOVE", "EDA", "HR")
+        )
+
+        predictions <- predict_stress$combine_predictions(predicted_data)
+
+        if (is.null(predictions)) {
+          available_data <- paste(names(data_all_dates), collapse = ", ")
+
+          message(glue(
+            "stress_predictions: no predictions for {device} ({r$type}), ",
+            "available data: [{available_data}]."
+          ))
+          toastr_warning("Could not compute the predicted stress level")
+
+          NULL
+        } else {
+          toastr_success("Got predictions!")
+          toastr_info("Rendering graphs...")
+
+          predictions
+        }
+
+      }, error = function(e) {
+        message(glue(
+          "stress_predictions: failed for {device} ({r$type}): {conditionMessage(e)}"
+        ))
+        toastr_warning("Could not compute the predicted stress level")
+
+        NULL
+      })
+
+    })
+
     ## Daily graphs --------------------------------
     observe({
 
@@ -412,35 +462,29 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
         functions$show_tab(ns("plotannotations"))
       }
 
-      nav_select(
-        id = "tabs",
-        selected = ns("plottab")
-      )
-
       if(input$check_add_calendar_annotation){
         annotatedata <- calendar()
       } else {
         annotatedata <- NULL
       }
 
-      # subset all data elements to chosen dates
-      if (r$chosen_dates != "All") {
-        data <- lapply(data, function(x) {
-          # skip when no DateTime column found
-          if (!"DateTime" %in% names(x)) {
-            return(x)
-          }
-          x$date <- as.Date(x$DateTime, tz = Sys.timezone())
-          x <- x[x$date %in% as.Date(r$chosen_dates),]
-          x$date <- NULL
-          x
-        })
+      chosen_dates <- r$chosen_dates
+
+      if (!"EDA" %in% names(data)) {
+        if ("SKIN_CONDUCTANCE" %in% names(data)) {
+          data$EDA <- data$SKIN_CONDUCTANCE
+          data$EDA$EDA <- data$EDA$SKIN_CONDUCTANCE
+        }
       }
 
-      # if less than 24 hours of data, or viewing one particular day, don't complete data
-      if(r$more_than_24h & r$chosen_dates == "All"){
-        data <- lapply(data, function(x) {
-          # skip when no DateTime column found
+      # All dates, for the stress predictions: the overview has its own date
+      # filter and must not follow the date picker of the parameters tab.
+      data_all_dates <- data
+
+      # If less than 24 hours of data, don't complete data.
+      if (r$more_than_24h) {
+        data_all_dates <- lapply(data_all_dates, function(x) {
+          # Skip when no DateTime column found.
           if (!"DateTime" %in% names(x)) {
             return(x)
           }
@@ -451,11 +495,21 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
         })
       }
 
-      if(!"EDA" %in% names(data)){
-        if ("SKIN_CONDUCTANCE" %in% names(data)){
-          data$EDA <- data$SKIN_CONDUCTANCE
-          data$EDA$EDA <- data$EDA$SKIN_CONDUCTANCE
-        }
+      # Subset all data elements to chosen dates. When viewing one particular
+      # day, don't complete data.
+      if (identical(chosen_dates, "All")) {
+        data <- data_all_dates
+      } else {
+        data <- lapply(data, function(x) {
+          # skip when no DateTime column found
+          if (!"DateTime" %in% names(x)) {
+            return(x)
+          }
+          x$date <- as.Date(x$DateTime, tz = Sys.timezone())
+          x <- x[x$date %in% as.Date(chosen_dates),]
+          x$date <- NULL
+          x
+        })
       }
 
       if ("ACC" %in% names(data)){
@@ -486,46 +540,8 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
       plot_list <- list()
 
       ## Stress predictions --------------------------
-      stress_predictions <- reactive({
-
-        tryCatch({
-
-          toastr_info("Applying stress algorithm 🚀")
-
-          predicted_data <- predict_stress$return_predictions(
-            data,
-            types = c("TEMP", "MOVE", "EDA", "HR")
-          )
-
-          predictions <- predict_stress$combine_predictions(predicted_data)
-
-          if (is.null(predictions)) {
-            available_data <- paste(names(data), collapse = ", ")
-
-            message(glue(
-              "stress_predictions: no predictions for {device} ({r$type}), ",
-              "available data: [{available_data}]."
-            ))
-            toastr_warning("Could not compute the predicted stress level")
-
-            NULL
-          } else {
-            toastr_success("Got predictions!")
-            toastr_info("Rendering graphs...")
-
-            predictions
-          }
-
-        }, error = function(e) {
-          message(glue(
-            "stress_predictions: failed for {device} ({r$type}): {conditionMessage(e)}"
-          ))
-          toastr_warning("Could not compute the predicted stress level")
-
-          NULL
-        })
-
-      })
+      # Unchanged data does not invalidate stress_predictions().
+      prediction_data(data_all_dates)
 
       # One line per parameter (TEMP, MOVE, EDA, HR) with the stress level that
       # the model predicts for that parameter on its own.
@@ -536,6 +552,13 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
 
         predictions <- stress_predictions()
         req(predictions)
+
+        # Only the dates chosen in the date picker of the parameters tab.
+        if (!identical(chosen_dates, "All")) {
+          prediction_dates <- as.Date(predictions$DateTime, tz = Sys.timezone())
+          predictions <- predictions[prediction_dates %in% as.Date(chosen_dates), , drop = FALSE]
+        }
+        req(nrow(predictions) > 0)
 
         yrange <- as.numeric(constants$app_config$visualisation$predicted_stress$yrange)
 
@@ -1048,6 +1071,12 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
       }
 
     }) |> bindEvent(c(input$btn_make_plot, input$btn_update_dates))
+
+    # Go to the overview after making the plots, but not after updating the
+    # date of the parameters tab: that should stay on the parameters tab.
+    observe({
+      nav_select("tabs", selected = ns("plottab"))
+    }, priority = -1) |> bindEvent(input$btn_make_plot)
 
     observe({
 
