@@ -659,7 +659,11 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
 
         # Only annotate the events within the selected range, events outside of
         # it would stretch the x axis beyond the filtered data.
-        overview_annotations <- functions$filter_dates(annotatedata, overview_date_range(), "Start")
+        # annotatedata is NULL when no calendar is shown. Skip filtering then, as
+        # filter_dates() treats NULL data as a problem and shows a warning.
+        overview_annotations <- if (!is.null(annotatedata)) {
+          functions$filter_dates(annotatedata, overview_date_range(), "Start")
+        }
         if (!is.null(overview_annotations) && nrow(overview_annotations) == 0) {
           overview_annotations <- NULL
         }
