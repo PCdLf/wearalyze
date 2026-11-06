@@ -537,6 +537,8 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
         predictions <- stress_predictions()
         req(predictions)
 
+        yrange <- as.numeric(constants$app_config$visualisation$predicted_stress$yrange)
+
         chart <- predictions |>
           e_charts(DateTime) |>
           e_line(
@@ -591,8 +593,8 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
             nameLocation = "center",
             nameRotate = 90,
             nameGap = 30,
-            min = 0,
-            max = 10
+            min = yrange[1],
+            max = yrange[2]
           ) |>
           e_datazoom(show = FALSE) |>
           e_tooltip(trigger = "item", extraCssText = constants$tooltip_css) |>
@@ -609,7 +611,7 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
         functions_devices$create_echarts4r_events(
           chart,
           annotatedata,
-          yrange = c(0, 10),
+          yrange = yrange,
           label = input$show_calendar_event_labels
         )
 
