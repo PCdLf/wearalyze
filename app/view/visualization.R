@@ -23,7 +23,7 @@ box::use(
   shinyjs[hide, show],
   shinytoastr[toastr_info, toastr_success, toastr_warning],
   shinyWidgets[pickerInput, updatePickerInput],
-  stats[runif],
+  stats[quantile, runif],
   tidyr[complete]
 )
 
@@ -651,6 +651,28 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
         functions$filter_dates(predictions, overview_date_range())
       })
 
+      # Quartiles of the predicted stress level over the last week of data: the
+      # 7 days up to the last measurement. Taken from all predictions rather than
+      # the selected date range, so the reference lines stay put when filtering.
+      last_week_quartiles <- reactive({
+        predictions <- stress_predictions()
+        req(predictions)
+
+        stress <- predict_stress$weighted_stress_score(predictions)
+
+        # No stress level at all: no reference lines, but do show the plot.
+        if (all(is.na(stress))) {
+          return(NULL)
+        }
+
+        last_measurement <- max(predictions$DateTime[!is.na(stress)])
+
+        in_last_week <- !is.na(stress) &
+          predictions$DateTime > last_measurement - as.difftime(7, units = "days")
+
+        quantile(stress[in_last_week], probs = c(0.25, 0.75), names = FALSE)
+      })
+
       # One line with the overall stress level: the weighted average over the
       # per parameter predictions of the stress algorithm.
       output$predicted_stress_level_plot <- renderEcharts4r({
@@ -712,6 +734,30 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
             top = grid_top,
             bottom = 30
           )
+
+        # Reference lines at the quartiles of the last week.
+        quartiles <- last_week_quartiles()
+        quartile_names <- c("Q1", "Q3")
+        for (i in seq_along(quartiles)) {
+          quartile_label <- sprintf("%s: %.1f", quartile_names[i], quartiles[i])
+
+          # The tooltip shows the name of the line, which is the same rounded
+          # label as on the plot.
+          chart <- chart |>
+            e_mark_line(
+              data = list(
+                yAxis = quartiles[i],
+                name = quartile_label,
+                lineStyle = list(
+                  color = "#555555",
+                  width = 2,
+                  type = "dashed"
+                )
+              ),
+              title = quartile_label,
+              tooltip = list(formatter = JS("function(params) { return params.name; }"))
+            )
+        }
 
         # No labels or arrow heads on the events here: the table below the plot
         # already names every event, and the tooltip gives the full text.
@@ -821,7 +867,9 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
 
         p(paste0("Weighted average of ",
                  paste(paste0(used, " (", weights[used], ")"), collapse = ", "),
-                 ". Each parameter is predicted on a 1-7 scale."))
+                 ". Each parameter is predicted on a 1-7 scale. ",
+                 "Q1 and Q3 are the first and third quartile of the ",
+                 "predicted stress level over the last 7 days of data."))
       })
 
       output$daily_graphs1 <- renderEcharts4r({
