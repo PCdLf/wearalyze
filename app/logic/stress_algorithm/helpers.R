@@ -1,7 +1,7 @@
 
 box::use(
   caret,
-  dplyr[filter, mutate, select, across, everything],
+  dplyr[filter, mutate, rename, select, across, everything],
   lubridate[hour, wday, month],
   randomForest,
   stats[sd, predict],
@@ -54,6 +54,35 @@ preprocess_data <- function(new_data, value_col, scaler, range_min = NULL, range
            day_of_week = wday(DateTime),
            month = month(DateTime),
            is_weekend = ifelse(day_of_week >= 6, 1, 0))
+
+  # The models were trained with features named after the parameter (TEMP_value,
+  # TEMP_mean, scl_mean, ...). Without this rename those columns are missing and
+  # get filled with 0 below, so the model would only see the time features.
+  if (value_col == "TEMP") {
+    new_data <- new_data |>
+      rename(TEMP_value = TEMP,
+             TEMP_mean = mean_val,
+             TEMP_std = std_val,
+             TEMP_min = min_val,
+             TEMP_max = max_val,
+             TEMP_log = log_val)
+  } else if (value_col == "accelerometers_std_g") {
+    new_data <- new_data |>
+      rename(accelerometers_std_g_mean = mean_val,
+             accelerometers_std_g_std = std_val,
+             accelerometers_std_g_min = min_val,
+             accelerometers_std_g_max = max_val,
+             accelerometers_std_g_log = log_val)
+  } else if (value_col == "EDA") {
+    # The EDA model calls the skin conductance "scl"
+    new_data <- new_data |>
+      rename(scl = EDA,
+             scl_mean = mean_val,
+             scl_std = std_val,
+             scl_min = min_val,
+             scl_max = max_val,
+             scl_log = log_val)
+  }
 
   new_data <- select(new_data, -DateTime)
 
