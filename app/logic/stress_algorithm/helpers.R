@@ -53,7 +53,8 @@ preprocess_data <- function(new_data, value_col, scaler, range_min = NULL, range
            hour = hour(DateTime),
            day_of_week = wday(DateTime),
            month = month(DateTime),
-           is_weekend = ifelse(day_of_week >= 6, 1, 0))
+           # wday() counts from Sunday (1) to Saturday (7)
+           is_weekend = ifelse(day_of_week %in% c(1, 7), 1, 0))
 
   # The models were trained with features named after the parameter (TEMP_value,
   # TEMP_mean, scl_mean, ...). Without this rename those columns are missing and
