@@ -5,6 +5,10 @@
       {
         "Name": "CRAN",
         "URL": "https://packagemanager.posit.co/cran/latest"
+      },
+      {
+        "Name": "PPM-2026-05-01",
+        "URL": "https://packagemanager.posit.co/cran/2026-05-01"
       }
     ]
   },
@@ -2686,7 +2690,7 @@
       "Package": "varian",
       "Version": "0.2.2",
       "Source": "Repository",
-      "Repository": "RSPM",
+      "Repository": "PPM-2026-05-01",
       "Requirements": [
         "Formula",
         "MASS",
