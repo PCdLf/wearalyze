@@ -83,6 +83,17 @@ preprocess_data <- function(new_data, value_col, scaler, range_min = NULL, range
              scl_min = min_val,
              scl_max = max_val,
              scl_log = log_val)
+  } else if (value_col == "HR") {
+    # The pulse rate model was trained with the rolling heart rate statistics
+    # under TEMP_* names (TEMP_mean averages 84 in its scaler, like HR_value),
+    # so the HR features are fed in under those names.
+    new_data <- new_data |>
+      rename(HR_value = HR,
+             TEMP_mean = mean_val,
+             TEMP_std = std_val,
+             TEMP_min = min_val,
+             TEMP_max = max_val,
+             TEMP_log = log_val)
   }
 
   new_data <- select(new_data, -DateTime)
