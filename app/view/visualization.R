@@ -23,7 +23,7 @@ box::use(
   shinyjs[hide, show],
   shinytoastr[toastr_info, toastr_success, toastr_warning],
   shinyWidgets[pickerInput, updatePickerInput],
-  stats[runif],
+  stats[quantile, runif],
   tidyr[complete]
 )
 
@@ -224,6 +224,10 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
     dailygraphs3 <- reactiveVal()
     dailygraphs4 <- reactiveVal()
 
+    # Data for the stress predictions (all dates). The models only run again
+    # when this data changes, not when another day is chosen in a filter.
+    prediction_data <- reactiveVal()
+
     # Modules ---------------------------------------
     helpButton$server("help", helptext = constants$help_config$visualization)
     y_eda <- visSeriesOptions$server("eda")
@@ -389,6 +393,52 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
 
 
     # Plotting -------------------------------------
+    ## Stress predictions --------------------------
+    # Predicted stress level for all dates. The overview and the parameters tab
+    # each filter these predictions on their own date selection.
+    stress_predictions <- reactive({
+      data_all_dates <- prediction_data()
+      req(data_all_dates)
+
+      tryCatch({
+
+        toastr_info("Applying stress algorithm 🚀")
+
+        predicted_data <- predict_stress$return_predictions(
+          data_all_dates,
+          types = c("TEMP", "MOVE", "EDA", "HR")
+        )
+
+        predictions <- predict_stress$combine_predictions(predicted_data)
+
+        if (is.null(predictions)) {
+          available_data <- paste(names(data_all_dates), collapse = ", ")
+
+          message(glue(
+            "stress_predictions: no predictions for {device} ({r$type}), ",
+            "available data: [{available_data}]."
+          ))
+          toastr_warning("Could not compute the predicted stress level")
+
+          NULL
+        } else {
+          toastr_success("Got predictions!")
+          toastr_info("Rendering graphs...")
+
+          predictions
+        }
+
+      }, error = function(e) {
+        message(glue(
+          "stress_predictions: failed for {device} ({r$type}): {conditionMessage(e)}"
+        ))
+        toastr_warning("Could not compute the predicted stress level")
+
+        NULL
+      })
+
+    })
+
     ## Daily graphs --------------------------------
     observe({
 
@@ -412,35 +462,29 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
         functions$show_tab(ns("plotannotations"))
       }
 
-      nav_select(
-        id = "tabs",
-        selected = ns("plottab")
-      )
-
       if(input$check_add_calendar_annotation){
         annotatedata <- calendar()
       } else {
         annotatedata <- NULL
       }
 
-      # subset all data elements to chosen dates
-      if (r$chosen_dates != "All") {
-        data <- lapply(data, function(x) {
-          # skip when no DateTime column found
-          if (!"DateTime" %in% names(x)) {
-            return(x)
-          }
-          x$date <- as.Date(x$DateTime, tz = Sys.timezone())
-          x <- x[x$date %in% as.Date(r$chosen_dates),]
-          x$date <- NULL
-          x
-        })
+      chosen_dates <- r$chosen_dates
+
+      if (!"EDA" %in% names(data)) {
+        if ("SKIN_CONDUCTANCE" %in% names(data)) {
+          data$EDA <- data$SKIN_CONDUCTANCE
+          data$EDA$EDA <- data$EDA$SKIN_CONDUCTANCE
+        }
       }
 
-      # if less than 24 hours of data, or viewing one particular day, don't complete data
-      if(r$more_than_24h & r$chosen_dates == "All"){
-        data <- lapply(data, function(x) {
-          # skip when no DateTime column found
+      # All dates, for the stress predictions: the overview has its own date
+      # filter and must not follow the date picker of the parameters tab.
+      data_all_dates <- data
+
+      # If less than 24 hours of data, don't complete data.
+      if (r$more_than_24h) {
+        data_all_dates <- lapply(data_all_dates, function(x) {
+          # Skip when no DateTime column found.
           if (!"DateTime" %in% names(x)) {
             return(x)
           }
@@ -451,11 +495,21 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
         })
       }
 
-      if(!"EDA" %in% names(data)){
-        if ("SKIN_CONDUCTANCE" %in% names(data)){
-          data$EDA <- data$SKIN_CONDUCTANCE
-          data$EDA$EDA <- data$EDA$SKIN_CONDUCTANCE
-        }
+      # Subset all data elements to chosen dates. When viewing one particular
+      # day, don't complete data.
+      if (identical(chosen_dates, "All")) {
+        data <- data_all_dates
+      } else {
+        data <- lapply(data, function(x) {
+          # skip when no DateTime column found
+          if (!"DateTime" %in% names(x)) {
+            return(x)
+          }
+          x$date <- as.Date(x$DateTime, tz = Sys.timezone())
+          x <- x[x$date %in% as.Date(chosen_dates),]
+          x$date <- NULL
+          x
+        })
       }
 
       if ("ACC" %in% names(data)){
@@ -486,46 +540,8 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
       plot_list <- list()
 
       ## Stress predictions --------------------------
-      stress_predictions <- reactive({
-
-        tryCatch({
-
-          toastr_info("Applying stress algorithm 🚀")
-
-          predicted_data <- predict_stress$return_predictions(
-            data,
-            types = c("TEMP", "MOVE", "EDA", "HR")
-          )
-
-          predictions <- predict_stress$combine_predictions(predicted_data)
-
-          if (is.null(predictions)) {
-            available_data <- paste(names(data), collapse = ", ")
-
-            message(glue(
-              "stress_predictions: no predictions for {device} ({r$type}), ",
-              "available data: [{available_data}]."
-            ))
-            toastr_warning("Could not compute the predicted stress level")
-
-            NULL
-          } else {
-            toastr_success("Got predictions!")
-            toastr_info("Rendering graphs...")
-
-            predictions
-          }
-
-        }, error = function(e) {
-          message(glue(
-            "stress_predictions: failed for {device} ({r$type}): {conditionMessage(e)}"
-          ))
-          toastr_warning("Could not compute the predicted stress level")
-
-          NULL
-        })
-
-      })
+      # Unchanged data does not invalidate stress_predictions().
+      prediction_data(data_all_dates)
 
       # One line per parameter (TEMP, MOVE, EDA, HR) with the stress level that
       # the model predicts for that parameter on its own.
@@ -536,6 +552,15 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
 
         predictions <- stress_predictions()
         req(predictions)
+
+        # Only the dates chosen in the date picker of the parameters tab.
+        if (!identical(chosen_dates, "All")) {
+          prediction_dates <- as.Date(predictions$DateTime, tz = Sys.timezone())
+          predictions <- predictions[prediction_dates %in% as.Date(chosen_dates), , drop = FALSE]
+        }
+        req(nrow(predictions) > 0)
+
+        yrange <- as.numeric(constants$app_config$visualisation$predicted_stress$yrange)
 
         chart <- predictions |>
           e_charts(DateTime) |>
@@ -591,8 +616,8 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
             nameLocation = "center",
             nameRotate = 90,
             nameGap = 30,
-            min = 0,
-            max = 10
+            min = yrange[1],
+            max = yrange[2]
           ) |>
           e_datazoom(show = FALSE) |>
           e_tooltip(trigger = "item", extraCssText = constants$tooltip_css) |>
@@ -609,7 +634,7 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
         functions_devices$create_echarts4r_events(
           chart,
           annotatedata,
-          yrange = c(0, 10),
+          yrange = yrange,
           label = input$show_calendar_event_labels
         )
 
@@ -626,6 +651,28 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
         functions$filter_dates(predictions, overview_date_range())
       })
 
+      # Quartiles of the predicted stress level over the last week of data: the
+      # 7 days up to the last measurement. Taken from all predictions rather than
+      # the selected date range, so the reference lines stay put when filtering.
+      last_week_quartiles <- reactive({
+        predictions <- stress_predictions()
+        req(predictions)
+
+        stress <- predict_stress$weighted_stress_score(predictions)
+
+        # No stress level at all: no reference lines, but do show the plot.
+        if (all(is.na(stress))) {
+          return(NULL)
+        }
+
+        last_measurement <- max(predictions$DateTime[!is.na(stress)])
+
+        in_last_week <- !is.na(stress) &
+          predictions$DateTime > last_measurement - as.difftime(7, units = "days")
+
+        quantile(stress[in_last_week], probs = c(0.25, 0.75), names = FALSE)
+      })
+
       # One line with the overall stress level: the weighted average over the
       # per parameter predictions of the stress algorithm.
       output$predicted_stress_level_plot <- renderEcharts4r({
@@ -634,7 +681,11 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
 
         # Only annotate the events within the selected range, events outside of
         # it would stretch the x axis beyond the filtered data.
-        overview_annotations <- functions$filter_dates(annotatedata, overview_date_range(), "Start")
+        # annotatedata is NULL when no calendar is shown. Skip filtering then, as
+        # filter_dates() treats NULL data as a problem and shows a warning.
+        overview_annotations <- if (!is.null(annotatedata)) {
+          functions$filter_dates(annotatedata, overview_date_range(), "Start")
+        }
         if (!is.null(overview_annotations) && nrow(overview_annotations) == 0) {
           overview_annotations <- NULL
         }
@@ -683,6 +734,30 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
             top = grid_top,
             bottom = 30
           )
+
+        # Reference lines at the quartiles of the last week.
+        quartiles <- last_week_quartiles()
+        quartile_names <- c("Q1", "Q3")
+        for (i in seq_along(quartiles)) {
+          quartile_label <- sprintf("%s: %.1f", quartile_names[i], quartiles[i])
+
+          # The tooltip shows the name of the line, which is the same rounded
+          # label as on the plot.
+          chart <- chart |>
+            e_mark_line(
+              data = list(
+                yAxis = quartiles[i],
+                name = quartile_label,
+                lineStyle = list(
+                  color = "#555555",
+                  width = 2,
+                  type = "dashed"
+                )
+              ),
+              title = quartile_label,
+              tooltip = list(formatter = JS("function(params) { return params.name; }"))
+            )
+        }
 
         # No labels or arrow heads on the events here: the table below the plot
         # already names every event, and the tooltip gives the full text.
@@ -792,7 +867,9 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
 
         p(paste0("Weighted average of ",
                  paste(paste0(used, " (", weights[used], ")"), collapse = ", "),
-                 ". Each parameter is predicted on a 1-7 scale."))
+                 ". Each parameter is predicted on a 1-7 scale. ",
+                 "Q1 and Q3 are the first and third quartile of the ",
+                 "predicted stress level over the last 7 days of data."))
       })
 
       output$daily_graphs1 <- renderEcharts4r({
@@ -1046,6 +1123,12 @@ server <- function(id, data = reactive(NULL), calendar = reactive(NULL),
       }
 
     }) |> bindEvent(c(input$btn_make_plot, input$btn_update_dates))
+
+    # Go to the overview after making the plots, but not after updating the
+    # date of the parameters tab: that should stay on the parameters tab.
+    observe({
+      nav_select("tabs", selected = ns("plottab"))
+    }, priority = -1) |> bindEvent(input$btn_make_plot)
 
     observe({
 

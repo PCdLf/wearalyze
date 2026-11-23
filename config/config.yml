@@ -9,7 +9,7 @@ visualisation:
     yrange: [24, 38]
     color: "#458B00"
   predicted_stress:
-    yrange: [0, 10]
+    yrange: [1, 7]
     color: "#CD2626"
   move:
     e4:

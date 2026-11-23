@@ -3,3 +3,5 @@
 .RData
 .Ruserdata
 derby.log
+# roborev snapshots
+/.roborev/
